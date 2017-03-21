@@ -1,0 +1,10 @@
+@echo off
+del a.exe
+del X.exe
+del ViperL.exe
+del ViperS.exe
+del X.tab.c
+del X.tab.h
+del tokens.txt
+del Viper.tab.c
+del Viper.tab.h
