@@ -1,0 +1,8 @@
+﻿  stdafx.cpp
+  ViperCompiler.cpp
+  正在生成代码
+b:\onedrive\文档\harry\academy\[s8]编译原理课程设计\vipercompiler\vipercompiler\fileinterface.h(15): warning C4715: “OpenFile”: 不是所有的控件路径都返回值
+  All 139 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  已完成代码的生成
+  ViperCompiler.vcxproj -> B:\OneDrive\文档\Harry\Academy\[S8]编译原理课程设计\ViperCompiler\Release\ViperCompiler.exe
+  ViperCompiler.vcxproj -> B:\OneDrive\文档\Harry\Academy\[S8]编译原理课程设计\ViperCompiler\Release\ViperCompiler.pdb (Full PDB)
