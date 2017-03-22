@@ -1,13 +1,22 @@
-// ViperCompiler.cpp : 定义控制台应用程序的入口点。
-//
 #include "stdafx.h"
 #include "headers.h"
+class Token;
+typedef union {
+	int Int;
+	double Double;
+	char * String;
+	char Char;
+} Arg;
+class Function {
+	char * name;
+	Arg * Arguments;
+	Token * Definations;
+	char * Return;
+};
 
-int main(int argc, char * argv[])
-{
-	if (argc > 2) {
+int main(int argc, char * argv[]) {
+	if (argc > 2)
 		cout << "Too many arguments!" << endl;
-	}
 	if (argc == 1) {
 		fprintf(stderr, instructions);
 		exit(1);
