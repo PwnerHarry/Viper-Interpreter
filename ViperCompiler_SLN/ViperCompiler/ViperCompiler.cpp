@@ -1,18 +1,5 @@
 #include "stdafx.h"
 #include "headers.h"
-class Token;
-typedef union {
-	int Int;
-	double Double;
-	char * String;
-	char Char;
-} Arg;
-class Function {
-	char * name;
-	Arg * Arguments;
-	Token * Definations;
-	char * Return;
-};
 
 int main(int argc, char * argv[]) {
 	if (argc > 2)
@@ -29,4 +16,3 @@ int main(int argc, char * argv[]) {
 	Lexer(Destination);
     return 0;
 }
-

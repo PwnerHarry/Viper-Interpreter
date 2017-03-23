@@ -6,8 +6,8 @@ del /F /S /Q ViperL.exe
 del /F /S /Q tokens.txt
 del /F /S /Q Viper.tab.c
 del /F /S /Q Viper.tab.h
-win_bison -d Viper.y
-win_flex ViperFirstLexer.l
+bison -d Viper.y
+flex ViperFirstLexer.l
 g++ lex.yy.cc
 ren a.exe ViperL.exe
 ViperL Viper.vi

@@ -6,12 +6,14 @@ del /F /S /Q ViperL.exe
 del /F /S /Q tokens.txt
 del /F /S /Q Viper.tab.c
 del /F /S /Q Viper.tab.h
-win_bison -d Viper.y
-win_flex ViperFirstLexer.l
-=g++ lex.yy.cc
+bison -d Viper.y
+pause
+flex ViperFirstLexer.l
+pause
+g++ lex.yy.cc
+pause
 ren a.exe ViperL.exe
 ViperL Test.vi
-CLS
 echo Lexer Success!
 del /F /S /Q lex.yy.cc
 del /F /S /Q a.exe
