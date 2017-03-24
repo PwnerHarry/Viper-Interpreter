@@ -185,134 +185,24 @@ union YYSTYPE{
 %%
 file_input				: file_input_sub ENDMARKER												{D(printf("YACC:\t file_input : file_input_sub ENDMARKER\n"));}
 						;
-comp_op					: "<"																	{D(printf("YACC:\t comp_op : \"<\"\n"));}
-						| ">" 																	{D(printf("YACC:\t comp_op : \">\"\n"));}
-						| "==" 																	{D(printf("YACC:\t comp_op : \"==\"\n"));}
-						| ">="																	{D(printf("YACC:\t comp_op : \">=\"\n"));}
-						| "<="																	{D(printf("YACC:\t comp_op : \"<=\"\n"));}
-						| "<>"																	{D(printf("YACC:\t comp_op : \"<>\"\n"));}
-						| "!="																	{D(printf("YACC:\t comp_op : \"!=\"\n"));}
-						| "in"																	{D(printf("YACC:\t comp_op : \"in\"\n"));}
-						| "not" "in"															{D(printf("YACC:\t comp_op : \"not\" \"in\"\n"));}
-						| "is"																	{D(printf("YACC:\t comp_op : \"is\"\n"));}
-						| "is" "not"															{D(printf("YACC:\t comp_op : \"is\" \"not\"\n"));}
+and_expr				: shift_expr and_expr_sub												{D(printf("YACC:\t and_expr : shift_expr and_expr_sub\n"));}
 						;
-single_input			: NEWLINE																{D(printf("YACC:\t single_input : NEWLINE\n"));}
-						| simple_stmt															{D(printf("YACC:\t single_input : simple_stmt\n"));}
-						| compound_stmt NEWLINE													{D(printf("YACC:\t single_input : compound_stmt NEWLINE\n"));}
+and_expr_sub			: %empty																{D(printf("YACC:\t and_expr_sub :  \n"));}
+						| "&" shift_expr and_expr_sub
 						;
-file_input_sub			: %empty																{D(printf("YACC:\t file_input_sub : \n"));}
-						| NEWLINE file_input_sub												{D(printf("YACC:\t file_input_sub : NEWLINE file_input_sub\n"));}
-						| stmt file_input_sub													{D(printf("YACC:\t file_input_sub : stmt file_input_sub\n"));}
+and_test				: not_test and_test_sub													{D(printf("YACC:\t and_test : not_test and_test_sub\n"));}
 						;
-eval_input_sub			: %empty
-						| eval_input_sub NEWLINE
+and_test_sub			: %empty																{D(printf("YACC:\t and_test_sub : \n"));}
+						| "and" not_test and_test_sub
 						;
-eval_input				: testlist eval_input_sub ENDMARKER
+annassign				: ":" test
+						| ":" test "=" test
 						;
-classdef				: "class" NAME ":" suite												{D(printf("YACC:\t classdef : \"class\" NAME : suite\n"));}
-						| "class" NAME "(" ")" ":" suite
-						| "class" NAME "(" arglist ")" ":" suite
+arglist					: argument arglist_sub
+						| argument arglist_sub ","
 						;
-typedargslist_long		: %empty
-						| "," 
-						| "," "*" typedargslist_ct
-						| "," "*" typedargslist_ct "," typedargslist_sub
-						| "," "*" tfpdef typedargslist_ct
-						| "," "*" tfpdef typedargslist_ct "," typedargslist_sub
-						| "," "**" tfpdef
-						| "," "**" tfpdef ","
-						;
-typedargslist_sub		: %empty
-						| "**" tfpdef
-						| "**" tfpdef ","
-						;
-typedargslist_ct		: %empty
-						| "," tfpdef typedargslist_ct
-						| "," tfpdef "=" test typedargslist_ct
-						;
-typedargslist			: tfpdef  typedargslist_ct typedargslist_long
-						| tfpdef "=" test typedargslist_ct typedargslist_long
-						| "*" typedargslist_ct
-						| "*" typedargslist_ct "," typedargslist_sub
-						| "*" tfpdef typedargslist_ct
-						| "*" tfpdef typedargslist_ct "," typedargslist_sub
-						| "**" tfpdef
-						| "**" tfpdef ","
-						;
-parameters				: "(" ")"																{D(printf("YACC:\t parameters : \"(\" \")\"\n"));}
-						| "(" typedargslist ")"													{D(printf("YACC:\t parameters : \"(\" typedargslist \")\"\n"));}
-						;
-funcdef					: "def" NAME parameters ":" suite										{D(printf("YACC:\t funcdef : \"def\" NAME parameters \":\" suite\n"));}
-						| "def" NAME parameters "->" test ":" suite								{D(printf("YACC:\t funcdef : \"def\" NAME parameters \"->\" test \":\" suite\n"));}
-						;
-async_funcdef			: ASYNC funcdef
-						;
-decorator				: "@" dotted_name NEWLINE
-						| "@" dotted_name "(" ")" NEWLINE
-						| "@" dotted_name "(" arglist ")" NEWLINE
-						;
-decorators				: decorator
-						| decorator decorators
-						;
-decorated				: decorators classdef
-						| decorators funcdef
-						| decorators async_funcdef
-						;
-tfpdef					: NAME 
-						| NAME ":" test
-						;
-suite_sub				: stmt																	{D(printf("YACC:\t suite_sub : stmt\n"));}
-						| stmt suite_sub														{D(printf("YACC:\t suite_sub : stmt suite_sub\n"));}
-						;
-suite					: simple_stmt															{D(printf("YACC:\t suite : simple_stmt\n"));}							
-						| NEWLINE INDENT suite_sub DEDENT										{D(printf("YACC:\t suite : NEWLINE INDENT suite_sub DEDENT\n"));}
-						;
-stmt					: simple_stmt															{D(printf("YACC:\t stmt : simple_stmt\n"));}
-						| compound_stmt															{D(printf("YACC:\t stmt : compound_stmt\n"));}
-						;
-simple_stmt_sub			: %empty																{D(printf("YACC:\t simple_stmt_sub : \n"));}
-						| ";" small_stmt simple_stmt_sub
-simple_stmt				: small_stmt simple_stmt_sub NEWLINE									{D(printf("YACC:\t simple_stmt : small_stmt simple_stmt_sub NEWLINE\n"));}
-						| small_stmt simple_stmt_sub ";" NEWLINE
-						;
-varargslist_another_sub	: varargslist_sub
-						| varargslist_sub ","
-						| varargslist_sub "," "*" varargslist_sub_sub_sub
-						| varargslist_sub "," "**" vfpdef
-						| varargslist_sub "," "**" vfpdef "," ;
-varargslist_sub_sub_sub	: vfpdef varargslist_sub_sub
-						| varargslist_sub_sub ;
-varargslist_sub_sub		: varargslist_sub
-						| varargslist_sub ","
-						| varargslist_sub "," "**" vfpdef
-						| varargslist_sub "," "**" vfpdef "," ;
-varargslist_sub			: %empty
-						| "," vfpdef varargslist_sub
-						| "," vfpdef "=" test varargslist_sub ;
-varargslist				: vfpdef "=" test varargslist_another_sub
-						| vfpdef varargslist_another_sub
-						| "*" varargslist_sub_sub_sub
-						| "**" vfpdef
-						| "**" vfpdef "," ;
-sliceop					: ":"
-						| ":" test
-						;
-subscript				: test
-						| ":"
-						| ":" sliceop
-						| ":" test
-						| ":" test sliceop
-						| test ":"
-						| test ":" sliceop
-						| test ":" test
-						| test ":" test sliceop
-						;
-subscriptlist_sub		: %empty
-						| "," subscript subscriptlist_sub
-						;
-subscriptlist			: subscript subscriptlist_sub
-						| subscript subscriptlist_sub ","
+arglist_sub				: %empty
+						| "," argument arglist_sub
 						;
 argument				: test																	{D(printf("YACC:\t argument : test\n"));}
 						| test comp_for
@@ -320,119 +210,21 @@ argument				: test																	{D(printf("YACC:\t argument : test\n"));}
 						| "**" test
 						| "*" test 
 						;
-arglist_sub				: %empty
-						| "," argument arglist_sub
+arith_expr				: term arith_expr_sub													{D(printf("YACC:\t arith_expr : term arith_expr_sub\n"));}
 						;
-arglist					: argument arglist_sub
-						| argument arglist_sub ","
+arith_expr_sub			: %empty																{D(printf("YACC:\t arith_expr_sub : \n"));}
+						| "+" term arith_expr_sub												{D(printf("YACC:\t arith_expr_sub : \"+\" term arith_expr_sub\n"));}
+						| "-" term arith_expr_sub												{D(printf("YACC:\t arith_expr_sub : \"-\" term arith_expr_sub\n"));}
 						;
-trailer					: "(" ")"																{D(printf("YACC:\t trailer : \"(\" \")\"\n"));}
-						| "(" arglist ")"														{D(printf("YACC:\t trailer : \"(\" arglist \")\"\n"));}
-						| "[" subscriptlist "]"													{D(printf("YACC:\t trailer : \"[\" subscriptlist \"]\"\n"));}
-						| "." NAME																{D(printf("YACC:\t trailer : \".\" NAME\n"));}
+assert_stmt				: "assert" test
+						| "assert" test "," test
 						;
-testlist_sub			: %empty																{D(printf("YACC:\t testlist_sub : \n"));}
-						| "," test testlist_sub
-testlist				: test testlist_sub														{D(printf("YACC:\t testlist : test testlist_sub\n"));}
-						| test testlist_sub ","
+async_funcdef			: ASYNC funcdef
 						;
-yield_arg				: "from" test
-						| testlist
+async_stmt				: ASYNC funcdef
+						| ASYNC with_stmt
+						| ASYNC for_stmt
 						;
-yield_expr				: "yield"
-						| "yield" yield_arg
-						;
-small_stmt				: expr_stmt																{D(printf("YACC:\t small_stmt : expr_stmt\n"));}
-						| del_stmt
-						| pass_stmt
-						| flow_stmt																{D(printf("YACC:\t small_stmt : flow_stmt\n"));}
-						| import_stmt
-						| global_stmt
-						| nonlocal_stmt
-						| assert_stmt
-						;
-expr_sub_sub			: %empty
-						| "=" yield_expr expr_sub_sub
-						| "=" testlist_star_expr expr_sub_sub
-						;
-expr_sub				: annassign
-						| augassign yield_expr
-						| augassign testlist
-						| expr_sub_sub
-						;
-expr_stmt				: testlist_star_expr expr_sub
-						;
-annassign				: ":" test
-						| ":" test "=" test
-						;
-testlist_star_expr		: dictorsetmaker_sub dictorsetmaker_sub
-						| dictorsetmaker_sub dictorsetmaker_sub ","
-						;
-star_expr				: "*" expr
-						;
-exprlist_es				: expr
-						| star_expr
-						;
-exprlist_sub			: %empty
-						| "," exprlist_es exprlist_sub
-						;
-exprlist				: exprlist_es exprlist_sub
-						| exprlist_es exprlist_sub ","
-lambdef_nocond			: "lambda"  ":" test_nocond
-						| "lambda" varargslist ":" test_nocond
-						;
-test_nocond				: or_test
-						| lambdef_nocond
-						;
-comp_if					: "if" test_nocond
-						| "if" test_nocond comp_iter
-						;
-comp_iter				: comp_for
-						| comp_if
-						;
-comp_for				: "for" exprlist "in" or_test
-						| "for" exprlist "in" or_test comp_iter
-						| ASYNC "for" exprlist "in" or_test
-						| ASYNC "for" exprlist "in" or_test comp_iter
-						;
-testlist_comp_sub_ts	: test
-						| star_expr
-						;
-dictorsetmaker_sub		: %empty
-						| "," testlist_comp_sub_ts dictorsetmaker_sub
-						;
-dictorsetmaker_tt		: test ":" test
-						| "**" expr
-						;
-dictorsetmaker_tt_sub	: %empty
-						| "," dictorsetmaker_tt dictorsetmaker_tt_sub
-						;
-dictorsetmaker			: dictorsetmaker_tt comp_for
-						| dictorsetmaker_tt dictorsetmaker_tt_sub
-						| dictorsetmaker_tt dictorsetmaker_tt_sub ","
-						| testlist_comp_sub_ts comp_for
-						| testlist_comp_sub_ts dictorsetmaker_sub
-						| testlist_comp_sub_ts dictorsetmaker_sub ","
-						;
-lambdef					: "lambda" varargslist ":" test
-						| "lambda" ":" test
-						;
-testlist_comp_sub_co	: %empty
-						| "," testlist_comp_sub_ts testlist_comp_sub_co
-						;
-testlist_comp			: testlist_comp_sub_ts comp_for
-						| testlist_comp_sub_ts testlist_comp_sub_co
-						| testlist_comp_sub_ts testlist_comp_sub_co ","
-						;
-string_plus				: STRING
-						| STRING string_plus ;
-atom_sub_yt				: %empty
-						| yield_expr
-						| testlist_comp ;
-atom_sub_t				: %empty
-						| testlist_comp ;
-atom_sub_d				: %empty
-						| dictorsetmaker ;
 atom					: "..."
 						| "None"
 						| "True"
@@ -442,86 +234,20 @@ atom					: "..."
 						| string_plus
 						| "(" atom_sub_yt ")"
 						| "[" atom_sub_t "]"
-						| "{" atom_sub_d "}" ;
-trailer_star			: %empty																{D(printf("YACC:\t trailer_star : \n"));}
-						| trailer trailer_star													{D(printf("YACC:\t trailer_star : trailer trailer_star\n"));}
-						;
-except_clause			: "except"
-						| "except" test
-						| "except" test "as" NAME
-						;
-while_stmt				: "while" test ":" suite
-						| "while" test ":" suite "else" ":" suite
-						;
-for_stmt				: "for" exprlist "in" testlist ":" suite
-						| "for" exprlist "in" testlist ":" suite "else" ":" suite
-						;
-try_stmt_sub_sub		: "finally" ":" suite
-						;
-try_stmt_sub_plus		: except_clause ":" suite
-						| except_clause ":" suite try_stmt_sub_plus
-						;
-try_stmt_sub			: try_stmt_sub_plus
-						| try_stmt_sub_plus try_stmt_sub_sub
-						| try_stmt_sub_plus "else" ":" suite
-						| try_stmt_sub_plus "else" ":" suite try_stmt_sub_sub
-						| try_stmt_sub_sub
-						;
-try_stmt				: "try" ":" suite try_stmt_sub
-						;
-with_stmt_sub			: %empty
-						| "," with_item with_stmt_sub
-						;
-with_stmt				: "with" with_item with_stmt_sub ":" suite
-						;
-with_item				: test
-						| test "as" expr
+						| "{" atom_sub_d "}"
 						;
 atom_expr				: atom trailer_star														{D(printf("YACC:\t atom_expr : atom trailer_star\n"));}
 						| AWAIT atom trailer_star
 						;
-power					: atom_expr																{D(printf("YACC:\t power : atom_expr\n"));}
-						| atom_expr "**" factor
+atom_sub_d				: %empty
+						| dictorsetmaker
 						;
-factor					: power																	{D(printf("YACC:\t factor : power\n"));}
-						| "+" factor															{D(printf("YACC:\t factor : \"+\" factor\n"));}
-						| "-" factor															{D(printf("YACC:\t factor : \"-\" factor\n"));}
-						| "~" factor															{D(printf("YACC:\t factor : \"~\" factor\n"));}
+atom_sub_t				: %empty
+						| testlist_comp
 						;
-term_sub				: %empty																{D(printf("YACC:\t term_sub : \n"));}
-						| "*" factor term_sub													{D(printf("YACC:\t term_sub : \"*\" factor term_sub\n"));}
-						| "@" factor term_sub													{D(printf("YACC:\t term_sub : \"@\" factor term_sub\n"));}
-						| "/" factor term_sub													{D(printf("YACC:\t term_sub : \"/\" factor term_sub\n"));}
-						| "%" factor term_sub													{D(printf("YACC:\t term_sub : \"$\" factor term_sub\n"));}
-						| "//" factor term_sub													{D(printf("YACC:\t term_sub : \"//\" factor term_sub\n"));}
-						;
-term					: factor term_sub														{D(printf("YACC:\t term : factor term_sub\n"));}
-						;
-arith_expr_sub			: %empty																{D(printf("YACC:\t arith_expr_sub : \n"));}
-						| "+" term arith_expr_sub												{D(printf("YACC:\t arith_expr_sub : \"+\" term arith_expr_sub\n"));}
-						| "-" term arith_expr_sub												{D(printf("YACC:\t arith_expr_sub : \"-\" term arith_expr_sub\n"));}
-						;
-arith_expr				: term arith_expr_sub													{D(printf("YACC:\t arith_expr : term arith_expr_sub\n"));}
-						;
-shift_expr_sub			: %empty																{D(printf("YACC:\t shift_expr_sub :  \n"));}
-						| "<<" expr shift_expr_sub
-						| ">>" expr shift_expr_sub
-						;
-shift_expr				: arith_expr shift_expr_sub												{D(printf("YACC:\t shift_expr : arith_expr shift_expr_sub\n"));}
-						;
-and_expr_sub			: %empty																{D(printf("YACC:\t and_expr_sub :  \n"));}
-						| "&" shift_expr and_expr_sub
-						;
-and_expr				: shift_expr and_expr_sub												{D(printf("YACC:\t and_expr : shift_expr and_expr_sub\n"));}
-						;
-xor_expr_sub			: %empty																{D(printf("YACC:\t xor_expr_sub : \n"));}
-						| "^" and_expr xor_expr_sub
-						;
-xor_expr				: and_expr xor_expr_sub													{D(printf("YACC:\t xor_expr : and_expr xor_expr_sub\n"));}
-						;
-expr_sub				: %empty																{D(printf("YACC:\t expr_sub : \n"));}
-						| "|" xor_expr expr_sub ;
-expr					: xor_expr expr_sub														{D(printf("YACC:\t expr : xor_expr expr_sub\n"));}
+atom_sub_yt				: %empty
+						| yield_expr
+						| testlist_comp
 						;
 augassign				: "+="
 						| "-="
@@ -537,30 +263,16 @@ augassign				: "+="
 						| "**="
 						| "//="
 						;
-comparison_sub			: %empty																{D(printf("YACC:\t comparison_sub : \n"));}
-						| comp_op expr comparison_sub 											{D(printf("YACC:\t comparison_sub :  comp_op expr comparison_sub\n"));}
+break_stmt				: "break"
+						;
+classdef				: "class" NAME ":" suite												{D(printf("YACC:\t classdef : \"class\" NAME : suite\n"));}
+						| "class" NAME "(" ")" ":" suite
+						| "class" NAME "(" arglist ")" ":" suite
 						;
 comparison				: expr comparison_sub													{D(printf("YACC:\t comparison : expr comparison_sub\n"));}
 						;
-not_test				: "not" not_test
-						| comparison															{D(printf("YACC:\t not_test : comparison\n"));}
-						;
-and_test_sub			: %empty																{D(printf("YACC:\t and_test_sub : \n"));}
-						| "and" not_test and_test_sub
-						;
-and_test				: not_test and_test_sub													{D(printf("YACC:\t and_test : not_test and_test_sub\n"));}
-						;
-or_test_sub				: %empty																{D(printf("YACC:\t or_test_sub : \n"));}
-						| "or" and_test or_test_sub
-						;											
-or_test					: and_test or_test_sub													{D(printf("YACC:\t or_test : and_test or_test_sub\n"));}
-						;
-test					: or_test																{D(printf("YACC:\t test : or_test\n"));}
-						| or_test "if" or_test "else" test
-						| lambdef																{D(printf("YACC:\t test : lambdef\n"));}
-						;
-assert_stmt				: "assert" test
-						| "assert" test "," test
+comparison_sub			: %empty																{D(printf("YACC:\t comparison_sub : \n"));}
+						| comp_op expr comparison_sub 											{D(printf("YACC:\t comparison_sub :  comp_op expr comparison_sub\n"));}
 						;
 compound_stmt			: if_stmt
 						| while_stmt
@@ -572,50 +284,144 @@ compound_stmt			: if_stmt
 						| decorated
 						| async_stmt
 						;
-async_stmt				: ASYNC funcdef
-						| ASYNC with_stmt
-						| ASYNC for_stmt
+comp_for				: "for" exprlist "in" or_test
+						| "for" exprlist "in" or_test comp_iter
+						| ASYNC "for" exprlist "in" or_test
+						| ASYNC "for" exprlist "in" or_test comp_iter
 						;
-if_stmt_sub				: %empty
-						| "elif" test ":" suite if_stmt_sub ;
-if_stmt					: "if" test ":" suite if_stmt_sub
-						| "if" test ":" suite if_stmt_sub "else" ":" suite
+comp_if					: "if" test_nocond
+						| "if" test_nocond comp_iter
 						;
-global_stmt				: "global" NAME
-						| global_stmt "," NAME ;
-nonlocal_stmt			: "nonlocal" NAME
-						| nonlocal_stmt "," NAME ;
+comp_iter				: comp_for
+						| comp_if
+						;
+comp_op					: "<"																	{D(printf("YACC:\t comp_op : \"<\"\n"));}
+						| ">" 																	{D(printf("YACC:\t comp_op : \">\"\n"));}
+						| "==" 																	{D(printf("YACC:\t comp_op : \"==\"\n"));}
+						| ">="																	{D(printf("YACC:\t comp_op : \">=\"\n"));}
+						| "<="																	{D(printf("YACC:\t comp_op : \"<=\"\n"));}
+						| "<>"																	{D(printf("YACC:\t comp_op : \"<>\"\n"));}
+						| "!="																	{D(printf("YACC:\t comp_op : \"!=\"\n"));}
+						| "in"																	{D(printf("YACC:\t comp_op : \"in\"\n"));}
+						| "not" "in"															{D(printf("YACC:\t comp_op : \"not\" \"in\"\n"));}
+						| "is"																	{D(printf("YACC:\t comp_op : \"is\"\n"));}
+						| "is" "not"															{D(printf("YACC:\t comp_op : \"is\" \"not\"\n"));}
+						;
+continue_stmt			: "continue"
+						;
+decorated				: decorators classdef
+						| decorators funcdef
+						| decorators async_funcdef
+						;
+decorator				: "@" dotted_name NEWLINE
+						| "@" dotted_name "(" ")" NEWLINE
+						| "@" dotted_name "(" arglist ")" NEWLINE
+						;
+decorators				: decorator
+						| decorator decorators
+						;
+del_stmt				: "del" exprlist
+						;
+dictorsetmaker			: dictorsetmaker_tt comp_for
+						| dictorsetmaker_tt dictorsetmaker_tt_sub
+						| dictorsetmaker_tt dictorsetmaker_tt_sub ","
+						| testlist_comp_sub_ts comp_for
+						| testlist_comp_sub_ts dictorsetmaker_sub
+						| testlist_comp_sub_ts dictorsetmaker_sub ","
+						;
+dictorsetmaker_sub		: %empty
+						| "," testlist_comp_sub_ts dictorsetmaker_sub
+						;
+dictorsetmaker_tt		: test ":" test
+						| "**" expr
+						;
+dictorsetmaker_tt_sub	: %empty
+						| "," dictorsetmaker_tt dictorsetmaker_tt_sub
+						;
+dotted_as_name			: dotted_name
+						| dotted_name "as" NAME
+						;
+dotted_as_names			: dotted_as_name
+						| dotted_as_names "," dotted_as_name
+						;
 dotted_name				: NAME
-						| dotted_name "," NAME ;
-vfpdef					: NAME ;
-continue_stmt			: "continue" ;
+						| dotted_name "," NAME
+						;
+dot_plus				: "."
+						| "..."
+						| "." dot_plus
+						| "..." dot_plus
+						;
+eval_input				: testlist eval_input_sub ENDMARKER
+						;
+eval_input_sub			: %empty
+						| eval_input_sub NEWLINE
+						;
+except_clause			: "except"
+						| "except" test
+						| "except" test "as" NAME
+						;
+exprlist				: exprlist_es exprlist_sub
+						| exprlist_es exprlist_sub ","
+						;
+exprlist_es				: expr
+						| star_expr
+						;
+exprlist_sub			: %empty
+						| "," exprlist_es exprlist_sub
+						;
+expr					: xor_expr expr_sub														{D(printf("YACC:\t expr : xor_expr expr_sub\n"));}
+						;
+expr_sub				: %empty																{D(printf("YACC:\t expr_sub : \n"));}
+						| "|" xor_expr expr_sub
+						;
+expr_stmt				: testlist_star_expr expr_stmt_sub
+						;
+expr_stmt_sub			: annassign
+						| augassign yield_expr
+						| augassign testlist
+						| expr_stmt_sub_sub
+						;
+expr_stmt_sub_sub		: %empty
+						| "=" yield_expr expr_stmt_sub_sub
+						| "=" testlist_star_expr expr_stmt_sub_sub
+						;
+factor					: power																	{D(printf("YACC:\t factor : power\n"));}
+						| "+" factor															{D(printf("YACC:\t factor : \"+\" factor\n"));}
+						| "-" factor															{D(printf("YACC:\t factor : \"-\" factor\n"));}
+						| "~" factor															{D(printf("YACC:\t factor : \"~\" factor\n"));}
+						;
+file_input_sub			: %empty																{D(printf("YACC:\t file_input_sub : \n"));}
+						| NEWLINE file_input_sub												{D(printf("YACC:\t file_input_sub : NEWLINE file_input_sub\n"));}
+						| stmt file_input_sub													{D(printf("YACC:\t file_input_sub : stmt file_input_sub\n"));}
+						;
 flow_stmt				: break_stmt
 						| continue_stmt
 						| return_stmt															{D(printf("YACC:\t flow_stmt : return_stmt\n"));}
 						| raise_stmt
 						| yield_stmt
 						;
-del_stmt				: "del" exprlist
+for_stmt				: "for" exprlist "in" testlist ":" suite
+						| "for" exprlist "in" testlist ":" suite "else" ":" suite
 						;
-break_stmt				: "break" ;
-pass_stmt				: "pass" ;
+funcdef					: "def" NAME parameters ":" suite										{D(printf("YACC:\t funcdef : \"def\" NAME parameters \":\" suite\n"));}
+						| "def" NAME parameters "->" test ":" suite								{D(printf("YACC:\t funcdef : \"def\" NAME parameters \"->\" test \":\" suite\n"));}
+						;
+global_stmt				: "global" NAME
+						| global_stmt "," NAME
+						;
+if_stmt					: "if" test ":" suite if_stmt_sub
+						| "if" test ":" suite if_stmt_sub "else" ":" suite
+						;
+if_stmt_sub				: %empty
+						| "elif" test ":" suite if_stmt_sub
+						;
 import_as_name			: NAME
-						| NAME "as" NAME ;
-dotted_as_name			: dotted_name
-						| dotted_name "as" NAME ;
+						| NAME "as" NAME
+						;
 import_as_names			: import_as_name
 						| import_as_name ","
-						| import_as_name "," import_as_names ;
-dotted_as_names			: dotted_as_name
-						| dotted_as_names "," dotted_as_name ;
-import_sub				: "*"
-						| "(" import_as_names ")"
-						| import_as_names
-						;
-dot_plus				: "."
-						| "..."
-						| "." dot_plus
-						| "..." dot_plus
+						| import_as_name "," import_as_names
 						;
 import_from				: "from" dot_plus dotted_name "import" import_sub
 						| "from" dot_plus "import" import_sub
@@ -625,14 +431,234 @@ import_name				: "import" dotted_as_names
 import_stmt				: import_name
 						| import_from
 						;
+import_sub				: "*"
+						| "(" import_as_names ")"
+						| import_as_names
+						;
+lambdef					: "lambda" varargslist ":" test
+						| "lambda" ":" test
+						;
+lambdef_nocond			: "lambda"  ":" test_nocond
+						| "lambda" varargslist ":" test_nocond
+						;
+nonlocal_stmt			: "nonlocal" NAME
+						| nonlocal_stmt "," NAME
+						;
+not_test				: "not" not_test
+						| comparison															{D(printf("YACC:\t not_test : comparison\n"));}
+						;
+or_test					: and_test or_test_sub													{D(printf("YACC:\t or_test : and_test or_test_sub\n"));}
+						;
+or_test_sub				: %empty																{D(printf("YACC:\t or_test_sub : \n"));}
+						| "or" and_test or_test_sub
+						;
+parameters				: "(" ")"																{D(printf("YACC:\t parameters : \"(\" \")\"\n"));}
+						| "(" typedargslist ")"													{D(printf("YACC:\t parameters : \"(\" typedargslist \")\"\n"));}
+						;
+pass_stmt				: "pass"
+						;
+power					: atom_expr																{D(printf("YACC:\t power : atom_expr\n"));}
+						| atom_expr "**" factor
+						;
 raise_stmt				: "raise"
 						| "raise" test
 						| "raise" test "from" test
 						;
-yield_stmt				: yield_expr
-						;
 return_stmt				: "return"																{D(printf("YACC:\t return_stmt : \"return\"\n"));}
 						| "return" testlist														{D(printf("YACC:\t return_stmt : \"return\" testlist\n"));}
+						;
+shift_expr				: arith_expr shift_expr_sub												{D(printf("YACC:\t shift_expr : arith_expr shift_expr_sub\n"));}
+						;
+shift_expr_sub			: %empty																{D(printf("YACC:\t shift_expr_sub :  \n"));}
+						| "<<" expr shift_expr_sub
+						| ">>" expr shift_expr_sub
+						;
+simple_stmt				: small_stmt simple_stmt_sub NEWLINE									{D(printf("YACC:\t simple_stmt : small_stmt simple_stmt_sub NEWLINE\n"));}
+						| small_stmt simple_stmt_sub ";" NEWLINE
+						;
+simple_stmt_sub			: %empty																{D(printf("YACC:\t simple_stmt_sub : \n"));}
+						| ";" small_stmt simple_stmt_sub
+						;
+single_input			: NEWLINE																{D(printf("YACC:\t single_input : NEWLINE\n"));}
+						| simple_stmt															{D(printf("YACC:\t single_input : simple_stmt\n"));}
+						| compound_stmt NEWLINE													{D(printf("YACC:\t single_input : compound_stmt NEWLINE\n"));}
+						;
+sliceop					: ":"
+						| ":" test
+						;
+small_stmt				: expr_stmt																{D(printf("YACC:\t small_stmt : expr_stmt\n"));}
+						| del_stmt
+						| pass_stmt
+						| flow_stmt																{D(printf("YACC:\t small_stmt : flow_stmt\n"));}
+						| import_stmt
+						| global_stmt
+						| nonlocal_stmt
+						| assert_stmt
+						;
+star_expr				: "*" expr
+						;
+stmt					: simple_stmt															{D(printf("YACC:\t stmt : simple_stmt\n"));}
+						| compound_stmt															{D(printf("YACC:\t stmt : compound_stmt\n"));}
+						;
+string_plus				: STRING
+						| STRING string_plus
+						;
+subscript				: test
+						| ":"
+						| ":" sliceop
+						| ":" test
+						| ":" test sliceop
+						| test ":"
+						| test ":" sliceop
+						| test ":" test
+						| test ":" test sliceop
+						;
+subscriptlist			: subscript subscriptlist_sub
+						| subscript subscriptlist_sub ","
+						;
+subscriptlist_sub		: %empty
+						| "," subscript subscriptlist_sub
+						;
+suite					: simple_stmt															{D(printf("YACC:\t suite : simple_stmt\n"));}							
+						| NEWLINE INDENT suite_sub DEDENT										{D(printf("YACC:\t suite : NEWLINE INDENT suite_sub DEDENT\n"));}
+						;
+suite_sub				: stmt																	{D(printf("YACC:\t suite_sub : stmt\n"));}
+						| stmt suite_sub														{D(printf("YACC:\t suite_sub : stmt suite_sub\n"));}
+						;
+term					: factor term_sub														{D(printf("YACC:\t term : factor term_sub\n"));}
+						;
+term_sub				: %empty																{D(printf("YACC:\t term_sub : \n"));}
+						| "*" factor term_sub													{D(printf("YACC:\t term_sub : \"*\" factor term_sub\n"));}
+						| "@" factor term_sub													{D(printf("YACC:\t term_sub : \"@\" factor term_sub\n"));}
+						| "/" factor term_sub													{D(printf("YACC:\t term_sub : \"/\" factor term_sub\n"));}
+						| "%" factor term_sub													{D(printf("YACC:\t term_sub : \"$\" factor term_sub\n"));}
+						| "//" factor term_sub													{D(printf("YACC:\t term_sub : \"//\" factor term_sub\n"));}
+						;
+test					: or_test																{D(printf("YACC:\t test : or_test\n"));}
+						| or_test "if" or_test "else" test
+						| lambdef																{D(printf("YACC:\t test : lambdef\n"));}
+						;
+testlist				: test testlist_sub														{D(printf("YACC:\t testlist : test testlist_sub\n"));}
+						| test testlist_sub ","
+						;
+testlist_comp			: testlist_comp_sub_ts comp_for
+						| testlist_comp_sub_ts testlist_comp_sub_co
+						| testlist_comp_sub_ts testlist_comp_sub_co ","
+						;
+testlist_comp_sub_co	: %empty
+						| "," testlist_comp_sub_ts testlist_comp_sub_co
+						;		
+testlist_comp_sub_ts	: test
+						| star_expr
+						;
+testlist_star_expr		: dictorsetmaker_sub dictorsetmaker_sub
+						| dictorsetmaker_sub dictorsetmaker_sub ","
+						;
+testlist_sub			: %empty																{D(printf("YACC:\t testlist_sub : \n"));}
+						| "," test testlist_sub
+						;
+test_nocond				: or_test
+						| lambdef_nocond
+						;
+tfpdef					: NAME 
+						| NAME ":" test
+						;
+trailer					: "(" ")"																{D(printf("YACC:\t trailer : \"(\" \")\"\n"));}
+						| "(" arglist ")"														{D(printf("YACC:\t trailer : \"(\" arglist \")\"\n"));}
+						| "[" subscriptlist "]"													{D(printf("YACC:\t trailer : \"[\" subscriptlist \"]\"\n"));}
+						| "." NAME																{D(printf("YACC:\t trailer : \".\" NAME\n"));}
+						;
+trailer_star			: %empty																{D(printf("YACC:\t trailer_star : \n"));}
+						| trailer trailer_star													{D(printf("YACC:\t trailer_star : trailer trailer_star\n"));}
+						;
+try_stmt				: "try" ":" suite try_stmt_sub
+						;
+try_stmt_sub			: try_stmt_sub_plus
+						| try_stmt_sub_plus try_stmt_sub_sub
+						| try_stmt_sub_plus "else" ":" suite
+						| try_stmt_sub_plus "else" ":" suite try_stmt_sub_sub
+						| try_stmt_sub_sub
+						;
+try_stmt_sub_plus		: except_clause ":" suite
+						| except_clause ":" suite try_stmt_sub_plus
+						;
+try_stmt_sub_sub		: "finally" ":" suite
+						;
+typedargslist			: tfpdef  typedargslist_ct typedargslist_long
+						| tfpdef "=" test typedargslist_ct typedargslist_long
+						| "*" typedargslist_ct
+						| "*" typedargslist_ct "," typedargslist_sub
+						| "*" tfpdef typedargslist_ct
+						| "*" tfpdef typedargslist_ct "," typedargslist_sub
+						| "**" tfpdef
+						| "**" tfpdef ","
+						;
+typedargslist_ct		: %empty
+						| "," tfpdef typedargslist_ct
+						| "," tfpdef "=" test typedargslist_ct
+						;
+typedargslist_long		: %empty
+						| "," 
+						| "," "*" typedargslist_ct
+						| "," "*" typedargslist_ct "," typedargslist_sub
+						| "," "*" tfpdef typedargslist_ct
+						| "," "*" tfpdef typedargslist_ct "," typedargslist_sub
+						| "," "**" tfpdef
+						| "," "**" tfpdef ","
+						;
+typedargslist_sub		: %empty
+						| "**" tfpdef
+						| "**" tfpdef ","
+						;
+varargslist				: vfpdef "=" test varargslist_another_sub
+						| vfpdef varargslist_another_sub
+						| "*" varargslist_sub_sub_sub
+						| "**" vfpdef
+						| "**" vfpdef ","
+						;
+varargslist_another_sub	: varargslist_sub
+						| varargslist_sub ","
+						| varargslist_sub "," "*" varargslist_sub_sub_sub
+						| varargslist_sub "," "**" vfpdef
+						| varargslist_sub "," "**" vfpdef ","
+						;
+varargslist_sub			: %empty
+						| "," vfpdef varargslist_sub
+						| "," vfpdef "=" test varargslist_sub
+						;
+varargslist_sub_sub		: varargslist_sub
+						| varargslist_sub ","
+						| varargslist_sub "," "**" vfpdef
+						| varargslist_sub "," "**" vfpdef ","
+						;
+varargslist_sub_sub_sub	: vfpdef varargslist_sub_sub
+						| varargslist_sub_sub
+						;
+vfpdef					: NAME
+						;
+while_stmt				: "while" test ":" suite
+						| "while" test ":" suite "else" ":" suite
+						;
+with_item				: test
+						| test "as" expr
+						;
+with_stmt				: "with" with_item with_stmt_sub ":" suite
+						;
+with_stmt_sub			: %empty
+						| "," with_item with_stmt_sub
+						;
+xor_expr				: and_expr xor_expr_sub													{D(printf("YACC:\t xor_expr : and_expr xor_expr_sub\n"));}
+						;
+xor_expr_sub			: %empty																{D(printf("YACC:\t xor_expr_sub : \n"));}
+						| "^" and_expr xor_expr_sub
+						;
+yield_arg				: "from" test
+						| testlist
+						;
+yield_expr				: "yield"
+						| "yield" yield_arg
+						;
+yield_stmt				: yield_expr
 						;
 %%
 

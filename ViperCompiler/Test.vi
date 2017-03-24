@@ -1,4 +1,9 @@
 def Test():
-	return 3 * 2 + 5
+	if 3 * 2 > 5:
+		return 1
+	else:
+		return 0
+
+
 
 
