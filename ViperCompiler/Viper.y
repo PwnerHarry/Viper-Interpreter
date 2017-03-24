@@ -5,8 +5,10 @@ using namespace std;
 #include "iostream"
 #include "fstream"
 #include "math.h"
+#define D(x) if (!DIAGNOSE); else x
+
 const int SIZE = 4096;
-const int DIAGNOSE = 0;
+const int DIAGNOSE = 1;
 class Token {
 public:
 	int lineno;
@@ -182,9 +184,9 @@ union YYSTYPE{
 %right "**" /* exponentiation */
 
 %%
-single_input			: NEWLINE
-						| simple_stmt
-						| compound_stmt NEWLINE
+single_input			: NEWLINE																{D(printf("single_input -> NEWLINE\n"));}
+						| simple_stmt															{D(printf("single_input -> simple_stmt\n"));}
+						| compound_stmt NEWLINE													{D(printf("single_input -> compound_stmt NEWLINE\n"));}
 						;
 file_input_sub			: %empty
 						| NEWLINE file_input_sub
@@ -193,7 +195,7 @@ file_input_sub			: %empty
 file_input				: file_input_sub ENDMARKER
 						;
 eval_input_sub			: %empty
-						| NEWLINE eval_input_sub
+						| eval_input_sub NEWLINE
 						;
 eval_input				: testlist eval_input_sub ENDMARKER
 						;
@@ -364,9 +366,6 @@ exprlist_sub			: %empty
 						;
 exprlist				: exprlist_es exprlist_sub
 						| exprlist_es exprlist_sub ","
-test_nocond				: or_test
-						| lambdef_nocond
-						;
 lambdef_nocond			: "lambda"  ":" test_nocond
 						| "lambda" varargslist ":" test_nocond
 						;
@@ -561,11 +560,10 @@ if_stmt					: "if" test ":" suite if_stmt_sub
 global_stmt				: "global" NAME
 						| global_stmt "," NAME ;
 nonlocal_stmt			: "nonlocal" NAME
-						| global_stmt "," NAME ;
+						| nonlocal_stmt "," NAME ;
 dotted_name				: NAME
 						| dotted_name "," NAME ;
 vfpdef					: NAME ;
-encoding_decl			: NAME ;
 continue_stmt			: "continue" ;
 flow_stmt				: break_stmt
 						| continue_stmt
@@ -626,11 +624,12 @@ int main(int argc, char * argv[]) {
 		exit(1);
 	}
 	ReadTokens(fin, T);
-	DispTokens(T);
+	D(DispTokens(T));
+	D(printf("START PARSING\n"));
 	return yyparse();
 };
 void DispTokens(TokenTable * T) {
-	//system("CLS");
+	system("CLS");
 	for (int i = 0; i < SIZE && T->t[i].availability != 0; i++) {
 		cout << T->t[i].lineno << "\t" << T->t[i].layer << "\t" << T->t[i].type << "\t";
 		switch (T->t[i].type) {
@@ -681,7 +680,6 @@ int ReadTokens(ifstream &f, TokenTable * T) {
 		T->t[i].layer = layer;
 		switch (T->t[i].type) {
 			case STRING:{
-				cout << "STRING" << endl;
 				char temp;
 				f.get(temp);
 				f.get(temp);
@@ -745,7 +743,7 @@ int ReadTokens(ifstream &f, TokenTable * T) {
 	}
 	T->Size = i;
 	f.close();
-	printf("TOKENS READ SUCCESSFULLY\n");
+	D(printf("TOKENS READ SUCCESSFULLY\n"));
 	return 0;
 };
 int yylex() {

@@ -46,7 +46,6 @@ literal		{number}
 \n			{
 				curr_dent = 0;
 				int c = yyinput();
-				printf("%c\n", c);
 				unput(c);
 				if (c != '\t' && prev_dent != 0)
 					for (int i = 0; i < prev_dent + 1; i++)
@@ -214,7 +213,6 @@ int main(int argc, char* argv[]) {
 	while (lexer->yylex() != 0)
 		;
 	*fout << mylineno << "\t" << ENDMARKER << "\t" << "ENDMARKER" <<"\n";
-	printf("WTF?\n");
 	fin->close();
 	delete fin;
 	fout->close();
