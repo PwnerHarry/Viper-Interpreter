@@ -5,10 +5,10 @@ using namespace std;
 #include "iostream"
 #include "fstream"
 #include "math.h"
-#define D(x) if (!DIAGNOSE); else x
+#define D(x) if (!VIPER_COMPILER_DIAGNOSE); else x
 
-const int SIZE = 4096;
-const int DIAGNOSE = 1;
+const int TOKEN_TABLE_SIZE = 4096;
+const int VIPER_COMPILER_DIAGNOSE = 1;
 class Token {
 public:
 	int lineno;
@@ -39,7 +39,7 @@ public:
 	Token * t;
 	TokenTable() {
 		Size = 0;
-		t = new Token[SIZE];
+		t = new Token[TOKEN_TABLE_SIZE];
 		Pointer = 0;
 	}
 };
@@ -119,7 +119,6 @@ union YYSTYPE{
 %token	LAMBDA				"lambda"
 %token	YIELD				"yield"
 %token	IMPORT				"import"
-%token	PRINT				"print"
 %token	WHILE				"while"
 %token	BREAK				"break"
 %token	CONTINUE			"continue"
@@ -184,22 +183,22 @@ union YYSTYPE{
 %right "**" /* exponentiation */
 
 %%
-single_input			: NEWLINE																{D(printf("single_input -> NEWLINE\n"));}
-						| simple_stmt															{D(printf("single_input -> simple_stmt\n"));}
-						| compound_stmt NEWLINE													{D(printf("single_input -> compound_stmt NEWLINE\n"));}
+file_input				: file_input_sub ENDMARKER												{D(printf("REDUCE:\tfile_input : file_input_sub ENDMARKER\n"));}
 						;
-file_input_sub			: %empty
-						| NEWLINE file_input_sub
-						| stmt file_input_sub
+single_input			: NEWLINE																{D(printf("REDUCE:\tsingle_input : NEWLINE\n"));}
+						| simple_stmt															{D(printf("REDUCE:\tsingle_input : simple_stmt\n"));}
+						| compound_stmt NEWLINE													{D(printf("REDUCE:\tsingle_input : compound_stmt NEWLINE\n"));}
 						;
-file_input				: file_input_sub ENDMARKER
+file_input_sub			: %empty																{D(printf("REDUCE:\tfile_input_sub : \n"));}
+						| NEWLINE file_input_sub												{D(printf("REDUCE:\tfile_input_sub : NEWLINE file_input_sub\n"));}
+						| stmt file_input_sub													{D(printf("REDUCE:\tfile_input_sub : stmt file_input_sub\n"));}
 						;
 eval_input_sub			: %empty
 						| eval_input_sub NEWLINE
 						;
 eval_input				: testlist eval_input_sub ENDMARKER
 						;
-classdef				: "class" NAME ":" suite
+classdef				: "class" NAME ":" suite												{D(printf("REDUCE:\tclassdef : \"class\" NAME : suite\n"));}
 						| "class" NAME "(" ")" ":" suite
 						| "class" NAME "(" arglist ")" ":" suite
 						;
@@ -229,11 +228,11 @@ typedargslist			: tfpdef  typedargslist_ct typedargslist_long
 						| "**" tfpdef
 						| "**" tfpdef ","
 						;
-parameters				: "(" ")"
-						| "(" typedargslist ")"
+parameters				: "(" ")"																{D(printf("REDUCE:\tparameters : \"(\" \")\"\n"));}
+						| "(" typedargslist ")"													{D(printf("REDUCE:\tparameters : \"(\" typedargslist \")\"\n"));}
 						;
-funcdef					: "def" NAME parameters ":" suite
-						| "def" NAME parameters "->" test ":" suite
+funcdef					: "def" NAME parameters ":" suite										{D(printf("REDUCE:\tfuncdef : \"def\" NAME parameters \":\" suite\n"));}
+						| "def" NAME parameters "->" test ":" suite								{D(printf("REDUCE:\tfuncdef : \"def\" NAME parameters \"->\" test \":\" suite\n"));}
 						;
 async_funcdef			: ASYNC funcdef
 						;
@@ -251,18 +250,18 @@ decorated				: decorators classdef
 tfpdef					: NAME 
 						| NAME ":" test
 						;
-suite_sub				: stmt
-						| stmt suite_sub
+suite_sub				: stmt																	{D(printf("REDUCE:\tsuite_sub : stmt\n"));}
+						| stmt suite_sub														{D(printf("REDUCE:\tsuite_sub : stmt suite_sub\n"));}
 						;
-suite					: simple_stmt
-						| NEWLINE INDENT suite_sub DEDENT
+suite					: simple_stmt															{D(printf("REDUCE:\tsuite : simple_stmt\n"));}							
+						| NEWLINE INDENT suite_sub DEDENT										{D(printf("REDUCE:\tsuite : NEWLINE INDENT suite_sub DEDENT\n"));}
 						;
-stmt					: simple_stmt
-						| compound_stmt
+stmt					: simple_stmt															{D(printf("REDUCE:\tstmt : simple_stmt\n"));}
+						| compound_stmt															{D(printf("REDUCE:\tstmt : compound_stmt\n"));}
 						;
-simple_stmt_sub			: %empty
+simple_stmt_sub			: %empty																{D(printf("REDUCE:\tsimple_stmt_sub : \n"));}
 						| ";" small_stmt simple_stmt_sub
-simple_stmt				: small_stmt simple_stmt_sub NEWLINE
+simple_stmt				: small_stmt simple_stmt_sub NEWLINE									{D(printf("REDUCE:\tsimple_stmt : small_stmt simple_stmt_sub NEWLINE\n"));}
 						| small_stmt simple_stmt_sub ";" NEWLINE
 						;
 varargslist_another_sub	: varargslist_sub
@@ -319,9 +318,9 @@ trailer					: "(" ")"
 						| "(" arglist ")"
 						| "[" subscriptlist "]"
 						| "." NAME
-testlist_sub			: %empty
+testlist_sub			: %empty																{D(printf("REDUCE:\ttestlist_sub : \n"));}
 						| "," test testlist_sub
-testlist				: test testlist_sub
+testlist				: test testlist_sub														{D(printf("REDUCE:\ttestlist : test testlist_sub\n"));}
 						| test testlist_sub ","
 						;
 yield_arg				: "from" test
@@ -330,10 +329,10 @@ yield_arg				: "from" test
 yield_expr				: "yield"
 						| "yield" yield_arg
 						;
-small_stmt				: expr_stmt
+small_stmt				: expr_stmt																{D(printf("REDUCE:\tsmall_stmt : expr_stmt\n"));}
 						| del_stmt
 						| pass_stmt
-						| flow_stmt
+						| flow_stmt																{D(printf("REDUCE:\tsmall_stmt : flow_stmt\n"));}
 						| import_stmt
 						| global_stmt
 						| nonlocal_stmt
@@ -426,7 +425,7 @@ atom					: "..."
 						| "True"
 						| "False"
 						| NAME
-						| NUMBER
+						| NUMBER																{D(printf("REDUCE:\tatom : NUMBER\n"));}
 						| string_plus
 						| "(" atom_sub_yt ")"
 						| "[" atom_sub_t "]"
@@ -490,12 +489,15 @@ shift_expr				: arith_expr shift_expr_sub ;
 and_expr_sub			: %empty
 						| "&" shift_expr and_expr_sub ;
 and_expr				: shift_expr and_expr_sub ;
-xor_expr_sub			: %empty
-						| "^" and_expr xor_expr_sub ;
-xor_expr				: and_expr xor_expr_sub ;
-expr_sub				: %empty
+xor_expr_sub			: %empty																{D(printf("REDUCE:\txor_expr_sub : \n"));}
+						| "^" and_expr xor_expr_sub
+						;
+xor_expr				: and_expr xor_expr_sub													{D(printf("REDUCE:\txor_expr : and_expr xor_expr_sub\n"));}
+						;
+expr_sub				: %empty																{D(printf("REDUCE:\texpr_sub : \n"));}
 						| "|" xor_expr expr_sub ;
-expr					: xor_expr expr_sub ;
+expr					: xor_expr expr_sub														{D(printf("REDUCE:\texpr : xor_expr expr_sub\n"));}
+						;
 augassign				: "+="
 						| "-="
 						| "*="
@@ -521,20 +523,26 @@ comp_op					: "<"
 						| "not" "in"
 						| "is"
 						| "is" "not" ;
-comparison_sub			: %empty
-						| comp_op expr comparison_sub ;
-comparison				: expr comparison_sub ;
+comparison_sub			: %empty																{D(printf("REDUCE:\tcomparison_sub : \n"));}
+						| comparison_sub comp_op expr											{D(printf("REDUCE:\tcomparison_sub : comparison_sub comp_op expr\n"));}
+comparison				: expr comparison_sub													{D(printf("REDUCE:\tcomparison : expr comparison_sub\n"));}
+						;
 not_test				: "not" not_test
-						| comparison ;
-and_test_sub			: %empty
-						| "and" not_test and_test_sub ;
-and_test				: not_test and_test_sub ;
-or_test_sub				: %empty
-						| "or" and_test or_test_sub ;
-or_test					: and_test or_test_sub ;
-test					: or_test
+						| comparison															{D(printf("REDUCE:\tnot_test : comparison\n"));}
+						;
+and_test_sub			: %empty																{D(printf("REDUCE:\tand_test_sub : \n"));}
+						| "and" not_test and_test_sub
+						;
+and_test				: not_test and_test_sub													{D(printf("REDUCE:\tand_test : not_test and_test_sub\n"));}
+						;
+or_test_sub				: %empty																{D(printf("REDUCE:\tor_test_sub : \n"));}
+						| "or" and_test or_test_sub
+						;											
+or_test					: and_test or_test_sub													{D(printf("REDUCE:\tor_test : and_test or_test_sub\n"));}
+						;
+test					: or_test																{D(printf("REDUCE:\ttest : or_test\n"));}
 						| or_test "if" or_test "else" test
-						| lambdef
+						| lambdef																{D(printf("REDUCE:\ttest : lambdef\n"));}
 						;
 assert_stmt				: "assert" test
 						| "assert" test "," test
@@ -544,7 +552,7 @@ compound_stmt			: if_stmt
 						| for_stmt
 						| try_stmt
 						| with_stmt
-						| funcdef
+						| funcdef																{D(printf("REDUCE:\tcompound_stmt : funcdef\n"));}
 						| classdef
 						| decorated
 						| async_stmt
@@ -567,7 +575,7 @@ vfpdef					: NAME ;
 continue_stmt			: "continue" ;
 flow_stmt				: break_stmt
 						| continue_stmt
-						| return_stmt
+						| return_stmt															{D(printf("REDUCE:\tflow_stmt : return_stmt\n"));}
 						| raise_stmt
 						| yield_stmt
 						;
@@ -607,8 +615,8 @@ raise_stmt				: "raise"
 						;
 yield_stmt				: yield_expr
 						;
-return_stmt				: "return"
-						| "return" testlist
+return_stmt				: "return"																{D(printf("REDUCE:\treturn_stmt : \"return\"\n"));}
+						| "return" testlist														{D(printf("REDUCE:\treturn_stmt : \"return\" testlist\n"));}
 						;
 %%
 
@@ -630,31 +638,31 @@ int main(int argc, char * argv[]) {
 };
 void DispTokens(TokenTable * T) {
 	system("CLS");
-	for (int i = 0; i < SIZE && T->t[i].availability != 0; i++) {
-		cout << T->t[i].lineno << "\t" << T->t[i].layer << "\t" << T->t[i].type << "\t";
+	for (int i = 0; i < TOKEN_TABLE_SIZE && T->t[i].availability != 0; i++) {
+		cout << T->t[i].lineno << "\t" << T->t[i].layer << "\t";
 		switch (T->t[i].type) {
 			case STRING:{
-				cout << T->t[i].value.S;
+				cout << "STRING" << "\t" << T->t[i].value.S;
 				break;
 			}
 			case NUMBER:{
-				cout << T->t[i].value.D;
+				cout << "NUMBER" << "\t" << T->t[i].value.D;
 				break;
 			}
 			case CHAR:{
-				cout << T->t[i].value.C;
+				cout << "CHAR" << "\t" << T->t[i].value.C;
 				break;
 			}
 			case NAME:{
-				cout << T->t[i].value.S;
+				cout << "NAME" << "\t" << T->t[i].value.S;
 				break;
 			}
 			case INDENT:{
-				cout << T->t[i].value.S;
+				cout << "INDENT";
 				break;
 			}
 			case DEDENT:{
-				cout << T->t[i].value.S;
+				cout << "DEDENT";
 				break;
 			}
 			default:{
@@ -670,7 +678,7 @@ int ReadTokens(ifstream &f, TokenTable * T) {
 	int layer = 0;
 	int Break = 0;
 	int i = 0;
-	for (; i < SIZE; i++) {
+	for (; i < TOKEN_TABLE_SIZE; i++) {
 		if (f.eof()){
 			cout << "EOF" << endl;
 			break;
@@ -748,33 +756,46 @@ int ReadTokens(ifstream &f, TokenTable * T) {
 };
 int yylex() {
 	int i = T->Pointer;
+	if (i == TOKEN_TABLE_SIZE)
+		return -1;
 	if (T->t[i].availability == 0)
 		return 0;
 	switch (T->t[i].type) {
 		case STRING:{
 			yylval.String = T->t[i].value.S;
+			D(printf("lex:\tSTRING\t%s\n", yylval.String));
 			break;
 		}
 		case NUMBER:{
 			yylval.Double = T->t[i].value.D;
+			D(printf("lex:\tNUMBER\t%lf\n", yylval.Double));
 			break;
 		}
 		case CHAR:{
 			yylval.Char = T->t[i].value.C;
+			D(printf("lex:\tCHAR\t%c\n", yylval.Char));
 			break;
 		}
 		case NAME:{
 			yylval.Name = T->t[i].value.S;
+			D(printf("lex:\tNAME\t%s\n", yylval.Name));
 			break;
 		}
 		case INDENT:{
+			D(printf("lex:\tINDENT\n"));
 			break;
 		}
 		case DEDENT:{
+			D(printf("lex:\tDEDENT\n"));
+			break;
+		}
+		case NEWLINE:{
+			D(printf("lex:\tNEWLINE\n"));
 			break;
 		}
 		default:{
 			yylval.Name = T->t[i].value.S;
+			D(printf("lex:\tDEFAULT\t%s\n", yylval.Name));
 			break;
 		}
 	}

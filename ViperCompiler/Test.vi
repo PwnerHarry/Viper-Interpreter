@@ -1,5 +1,5 @@
-print(123)
-print('c')
-print('what the fuck')
-
-
+def Test():
+	if 3 * 2 > 5 / 1 :
+		return 3 * 2 + 1
+	else :
+		return 0

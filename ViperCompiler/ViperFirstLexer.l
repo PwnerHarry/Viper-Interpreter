@@ -44,22 +44,26 @@ literal		{number}
 					*fout << mylineno << "\t" << INDENT << "\t" << "INDENT" << "\n";
 			}
 \n			{
-				curr_dent = 0;
+				*fout << mylineno++ << "\t" << NEWLINE << "\t" << "NEWLINE" << "\n";
 				int c = yyinput();
 				unput(c);
-				if (c != '\t' && prev_dent != 0)
-					for (int i = 0; i < prev_dent + 1; i++)
+				if (c != '\t' && prev_dent != 0) {
+					for (int i = 0; i < prev_dent; i++) {
 						*fout << mylineno << "\t" << DEDENT << "\t" << "DEDENT" << "\n";
-				*fout << mylineno++ << "\t" << NEWLINE << "\t" << "NEWLINE" << "\n";
+						*fout << mylineno << "\t" << NEWLINE << "\t" << "NEWLINE" << "\n";
+					}
+					prev_dent = 0;
+				}
 			}
 \t			{
-				curr_dent = 0;
+				curr_dent = 1;
 				char c;
-				while((c = yyinput()) == '\t'){
+				while((c = yyinput()) == '\t')
 					curr_dent++;
-				}
-				if (c != '\n'){
-					unput(c);
+				unput(c);
+				if (c == '\n')
+					curr_dent = 0;
+				else {
 					if (curr_dent > prev_dent)
 						for (int i = 0; i < curr_dent - prev_dent; i++)
 							*fout << mylineno << "\t" << INDENT << "\t" << "INDENT" << "\n";	
@@ -68,6 +72,7 @@ literal		{number}
 							*fout << mylineno << "\t" << DEDENT << "\t" <<"DEDENT" << "\n";
 					prev_dent = curr_dent;
 				}
+				
 			}
 "..."		{*fout << mylineno << "\t" << ELLIPSIS << "\t" << YYText() << "\n";}
 "("			{*fout << mylineno << "\t" << LPAR << "\t" << YYText() << "\n";}
@@ -112,7 +117,6 @@ literal		{number}
 "exec"		{*fout << mylineno << "\t" << EXEC << "\t" << YYText() << "\n";}
 "import"	{*fout << mylineno << "\t" << IMPORT << "\t" << YYText() << "\n";}
 "with"		{*fout << mylineno << "\t" << WITH << "\t" << YYText() << "\n";}
-"print"		{*fout << mylineno << "\t" << PRINT << "\t" << YYText() << "\n";}
 "while"		{*fout << mylineno << "\t" << WHILE << "\t" << YYText() << "\n";}
 "break"		{*fout << mylineno << "\t" << BREAK << "\t" << YYText() << "\n";}
 "continue"	{*fout << mylineno << "\t" << CONTINUE << "\t" << YYText() << "\n";}
@@ -212,6 +216,15 @@ int main(int argc, char* argv[]) {
 	FlexLexer* lexer = new yyFlexLexer(fin, fout);
 	while (lexer->yylex() != 0)
 		;
+	*fout << mylineno << "\t" << NEWLINE << "\t" << "NEWLINE" <<"\n";
+	curr_dent = 0;
+	if (curr_dent > prev_dent)
+		for (int i = 0; i < curr_dent - prev_dent; i++)
+			*fout << mylineno << "\t" << INDENT << "\t" << "INDENT" << "\n";	
+	if (curr_dent < prev_dent)
+		for (int i = 0; i < prev_dent - curr_dent; i++)
+			*fout << mylineno << "\t" << DEDENT << "\t" <<"DEDENT" << "\n";
+	prev_dent = curr_dent;
 	*fout << mylineno << "\t" << ENDMARKER << "\t" << "ENDMARKER" <<"\n";
 	fin->close();
 	delete fin;
