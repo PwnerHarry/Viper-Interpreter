@@ -6,6 +6,7 @@ del /F /S /Q ViperL.exe
 del /F /S /Q tokens.txt
 del /F /S /Q Viper.tab.c
 del /F /S /Q Viper.tab.h
+del /F /S /Q PROCESS.log
 CLS
 bison -d Viper.y
 pause

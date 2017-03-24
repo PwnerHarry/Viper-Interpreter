@@ -5,10 +5,11 @@ using namespace std;
 #include "iostream"
 #include "fstream"
 #include "math.h"
-#define D(x) if (!VIPER_COMPILER_DIAGNOSE); else x
+#define D(x) if (!VIPER_COMPILER_DIAGNOSE) ; else x
 
 const int TOKEN_TABLE_SIZE = 4096;
 const int VIPER_COMPILER_DIAGNOSE = 1;
+ofstream fout_diag("PROCESS.log", ios::out);
 class Token {
 public:
 	int lineno;
@@ -57,7 +58,7 @@ class Function {
 };
 int yylex();
 int ReadTokens(ifstream &f, TokenTable * T);
-void DispTokens(TokenTable * T);
+void PrintTokens(TokenTable * T);
 void yyerror(char *s);
 TokenTable * T = new TokenTable;
 class function {
@@ -183,16 +184,16 @@ union YYSTYPE{
 %right "**" /* exponentiation */
 
 %%
-file_input				: file_input_sub ENDMARKER												{D(printf("YACC:\t file_input : file_input_sub ENDMARKER\n"));}
+file_input				: file_input_sub ENDMARKER												{D(fout_diag << "YACC:\tfile_input : file_input_sub ENDMARKER\n");}
 						;
-and_expr				: shift_expr and_expr_sub												{D(printf("YACC:\t and_expr : shift_expr and_expr_sub\n"));}
+and_expr				: shift_expr and_expr_sub												{D(fout_diag << "YACC:\tand_expr : shift_expr and_expr_sub\n");}
 						;
-and_expr_sub			: %empty																{D(printf("YACC:\t and_expr_sub :  \n"));}
+and_expr_sub			: %empty																{D(fout_diag << "YACC:\tand_expr_sub :  \n");}
 						| "&" shift_expr and_expr_sub
 						;
-and_test				: not_test and_test_sub													{D(printf("YACC:\t and_test : not_test and_test_sub\n"));}
+and_test				: not_test and_test_sub													{D(fout_diag << "YACC:\tand_test : not_test and_test_sub\n");}
 						;
-and_test_sub			: %empty																{D(printf("YACC:\t and_test_sub : \n"));}
+and_test_sub			: %empty																{D(fout_diag << "YACC:\tand_test_sub : \n");}
 						| "and" not_test and_test_sub
 						;
 annassign				: ":" test
@@ -204,17 +205,17 @@ arglist					: argument arglist_sub
 arglist_sub				: %empty
 						| "," argument arglist_sub
 						;
-argument				: test																	{D(printf("YACC:\t argument : test\n"));}
+argument				: test																	{D(fout_diag << "YACC:\targument : test\n");}
 						| test comp_for
 						| test "=" test
 						| "**" test
 						| "*" test 
 						;
-arith_expr				: term arith_expr_sub													{D(printf("YACC:\t arith_expr : term arith_expr_sub\n"));}
+arith_expr				: term arith_expr_sub													{D(fout_diag << "YACC:\tarith_expr : term arith_expr_sub\n");}
 						;
-arith_expr_sub			: %empty																{D(printf("YACC:\t arith_expr_sub : \n"));}
-						| "+" term arith_expr_sub												{D(printf("YACC:\t arith_expr_sub : \"+\" term arith_expr_sub\n"));}
-						| "-" term arith_expr_sub												{D(printf("YACC:\t arith_expr_sub : \"-\" term arith_expr_sub\n"));}
+arith_expr_sub			: %empty																{D(fout_diag << "YACC:\tarith_expr_sub : \n");}
+						| "+" term arith_expr_sub												{D(fout_diag << "YACC:\tarith_expr_sub : \"+\" term arith_expr_sub\n");}
+						| "-" term arith_expr_sub												{D(fout_diag << "YACC:\tarith_expr_sub : \"-\" term arith_expr_sub\n");}
 						;
 assert_stmt				: "assert" test
 						| "assert" test "," test
@@ -230,13 +231,13 @@ atom					: "..."
 						| "True"
 						| "False"
 						| NAME
-						| NUMBER																{D(printf("YACC:\t atom : NUMBER\n"));}
+						| NUMBER																{D(fout_diag << "YACC:\tatom : NUMBER\n");}
 						| string_plus
 						| "(" atom_sub_yt ")"
 						| "[" atom_sub_t "]"
 						| "{" atom_sub_d "}"
 						;
-atom_expr				: atom trailer_star														{D(printf("YACC:\t atom_expr : atom trailer_star\n"));}
+atom_expr				: atom trailer_star														{D(fout_diag << "YACC:\tatom_expr : atom trailer_star\n");}
 						| AWAIT atom trailer_star
 						;
 atom_sub_d				: %empty
@@ -265,21 +266,21 @@ augassign				: "+="
 						;
 break_stmt				: "break"
 						;
-classdef				: "class" NAME ":" suite												{D(printf("YACC:\t classdef : \"class\" NAME : suite\n"));}
+classdef				: "class" NAME ":" suite												{D(fout_diag << "YACC:\tclassdef : \"class\" NAME : suite\n");}
 						| "class" NAME "(" ")" ":" suite
 						| "class" NAME "(" arglist ")" ":" suite
 						;
-comparison				: expr comparison_sub													{D(printf("YACC:\t comparison : expr comparison_sub\n"));}
+comparison				: expr comparison_sub													{D(fout_diag << "YACC:\tcomparison : expr comparison_sub\n");}
 						;
-comparison_sub			: %empty																{D(printf("YACC:\t comparison_sub : \n"));}
-						| comp_op expr comparison_sub 											{D(printf("YACC:\t comparison_sub :  comp_op expr comparison_sub\n"));}
+comparison_sub			: %empty																{D(fout_diag << "YACC:\tcomparison_sub : \n");}
+						| comp_op expr comparison_sub 											{D(fout_diag << "YACC:\tcomparison_sub :  comp_op expr comparison_sub\n");}
 						;
 compound_stmt			: if_stmt
 						| while_stmt
 						| for_stmt
 						| try_stmt
 						| with_stmt
-						| funcdef																{D(printf("YACC:\t compound_stmt : funcdef\n"));}
+						| funcdef																{D(fout_diag << "YACC:\tcompound_stmt : funcdef\n");}
 						| classdef
 						| decorated
 						| async_stmt
@@ -295,17 +296,17 @@ comp_if					: "if" test_nocond
 comp_iter				: comp_for
 						| comp_if
 						;
-comp_op					: "<"																	{D(printf("YACC:\t comp_op : \"<\"\n"));}
-						| ">" 																	{D(printf("YACC:\t comp_op : \">\"\n"));}
-						| "==" 																	{D(printf("YACC:\t comp_op : \"==\"\n"));}
-						| ">="																	{D(printf("YACC:\t comp_op : \">=\"\n"));}
-						| "<="																	{D(printf("YACC:\t comp_op : \"<=\"\n"));}
-						| "<>"																	{D(printf("YACC:\t comp_op : \"<>\"\n"));}
-						| "!="																	{D(printf("YACC:\t comp_op : \"!=\"\n"));}
-						| "in"																	{D(printf("YACC:\t comp_op : \"in\"\n"));}
-						| "not" "in"															{D(printf("YACC:\t comp_op : \"not\" \"in\"\n"));}
-						| "is"																	{D(printf("YACC:\t comp_op : \"is\"\n"));}
-						| "is" "not"															{D(printf("YACC:\t comp_op : \"is\" \"not\"\n"));}
+comp_op					: "<"																	{D(fout_diag << "YACC:\tcomp_op : \"<\"\n");}
+						| ">" 																	{D(fout_diag << "YACC:\tcomp_op : \">\"\n");}
+						| "==" 																	{D(fout_diag << "YACC:\tcomp_op : \"==\"\n");}
+						| ">="																	{D(fout_diag << "YACC:\tcomp_op : \">=\"\n");}
+						| "<="																	{D(fout_diag << "YACC:\tcomp_op : \"<=\"\n");}
+						| "<>"																	{D(fout_diag << "YACC:\tcomp_op : \"<>\"\n");}
+						| "!="																	{D(fout_diag << "YACC:\tcomp_op : \"!=\"\n");}
+						| "in"																	{D(fout_diag << "YACC:\tcomp_op : \"in\"\n");}
+						| "not" "in"															{D(fout_diag << "YACC:\tcomp_op : \"not\" \"in\"\n");}
+						| "is"																	{D(fout_diag << "YACC:\tcomp_op : \"is\"\n");}
+						| "is" "not"															{D(fout_diag << "YACC:\tcomp_op : \"is\" \"not\"\n");}
 						;
 continue_stmt			: "continue"
 						;
@@ -370,9 +371,9 @@ exprlist_es				: expr
 exprlist_sub			: %empty
 						| "," exprlist_es exprlist_sub
 						;
-expr					: xor_expr expr_sub														{D(printf("YACC:\t expr : xor_expr expr_sub\n"));}
+expr					: xor_expr expr_sub														{D(fout_diag << "YACC:\texpr : xor_expr expr_sub\n");}
 						;
-expr_sub				: %empty																{D(printf("YACC:\t expr_sub : \n"));}
+expr_sub				: %empty																{D(fout_diag << "YACC:\texpr_sub : \n");}
 						| "|" xor_expr expr_sub
 						;
 expr_stmt				: testlist_star_expr expr_stmt_sub
@@ -386,26 +387,26 @@ expr_stmt_sub_sub		: %empty
 						| "=" yield_expr expr_stmt_sub_sub
 						| "=" testlist_star_expr expr_stmt_sub_sub
 						;
-factor					: power																	{D(printf("YACC:\t factor : power\n"));}
-						| "+" factor															{D(printf("YACC:\t factor : \"+\" factor\n"));}
-						| "-" factor															{D(printf("YACC:\t factor : \"-\" factor\n"));}
-						| "~" factor															{D(printf("YACC:\t factor : \"~\" factor\n"));}
+factor					: power																	{D(fout_diag << "YACC:\tfactor : power\n");}
+						| "+" factor															{D(fout_diag << "YACC:\tfactor : \"+\" factor\n");}
+						| "-" factor															{D(fout_diag << "YACC:\tfactor : \"-\" factor\n");}
+						| "~" factor															{D(fout_diag << "YACC:\tfactor : \"~\" factor\n");}
 						;
-file_input_sub			: %empty																{D(printf("YACC:\t file_input_sub : \n"));}
-						| NEWLINE file_input_sub												{D(printf("YACC:\t file_input_sub : NEWLINE file_input_sub\n"));}
-						| stmt file_input_sub													{D(printf("YACC:\t file_input_sub : stmt file_input_sub\n"));}
+file_input_sub			: %empty																{D(fout_diag << "YACC:\tfile_input_sub : \n");}
+						| NEWLINE file_input_sub												{D(fout_diag << "YACC:\tfile_input_sub : NEWLINE file_input_sub\n");}
+						| stmt file_input_sub													{D(fout_diag << "YACC:\tfile_input_sub : stmt file_input_sub\n");}
 						;
 flow_stmt				: break_stmt
 						| continue_stmt
-						| return_stmt															{D(printf("YACC:\t flow_stmt : return_stmt\n"));}
+						| return_stmt															{D(fout_diag << "YACC:\tflow_stmt : return_stmt\n");}
 						| raise_stmt
 						| yield_stmt
 						;
 for_stmt				: "for" exprlist "in" testlist ":" suite
 						| "for" exprlist "in" testlist ":" suite "else" ":" suite
 						;
-funcdef					: "def" NAME parameters ":" suite										{D(printf("YACC:\t funcdef : \"def\" NAME parameters \":\" suite\n"));}
-						| "def" NAME parameters "->" test ":" suite								{D(printf("YACC:\t funcdef : \"def\" NAME parameters \"->\" test \":\" suite\n"));}
+funcdef					: "def" NAME parameters ":" suite										{D(fout_diag << "YACC:\tfuncdef : \"def\" NAME parameters \":\" suite\n");}
+						| "def" NAME parameters "->" test ":" suite								{D(fout_diag << "YACC:\tfuncdef : \"def\" NAME parameters \"->\" test \":\" suite\n");}
 						;
 global_stmt				: "global" NAME
 						| global_stmt "," NAME
@@ -445,51 +446,51 @@ nonlocal_stmt			: "nonlocal" NAME
 						| nonlocal_stmt "," NAME
 						;
 not_test				: "not" not_test
-						| comparison															{D(printf("YACC:\t not_test : comparison\n"));}
+						| comparison															{D(fout_diag << "YACC:\tnot_test : comparison\n");}
 						;
-or_test					: and_test or_test_sub													{D(printf("YACC:\t or_test : and_test or_test_sub\n"));}
+or_test					: and_test or_test_sub													{D(fout_diag << "YACC:\tor_test : and_test or_test_sub\n");}
 						;
-or_test_sub				: %empty																{D(printf("YACC:\t or_test_sub : \n"));}
+or_test_sub				: %empty																{D(fout_diag << "YACC:\tor_test_sub : \n");}
 						| "or" and_test or_test_sub
 						;
-parameters				: "(" ")"																{D(printf("YACC:\t parameters : \"(\" \")\"\n"));}
-						| "(" typedargslist ")"													{D(printf("YACC:\t parameters : \"(\" typedargslist \")\"\n"));}
+parameters				: "(" ")"																{D(fout_diag << "YACC:\tparameters : \"(\" \")\"\n");}
+						| "(" typedargslist ")"													{D(fout_diag << "YACC:\tparameters : \"(\" typedargslist \")\"\n");}
 						;
 pass_stmt				: "pass"
 						;
-power					: atom_expr																{D(printf("YACC:\t power : atom_expr\n"));}
+power					: atom_expr																{D(fout_diag << "YACC:\tpower : atom_expr\n");}
 						| atom_expr "**" factor
 						;
 raise_stmt				: "raise"
 						| "raise" test
 						| "raise" test "from" test
 						;
-return_stmt				: "return"																{D(printf("YACC:\t return_stmt : \"return\"\n"));}
-						| "return" testlist														{D(printf("YACC:\t return_stmt : \"return\" testlist\n"));}
+return_stmt				: "return"																{D(fout_diag << "YACC:\treturn_stmt : \"return\"\n");}
+						| "return" testlist														{D(fout_diag << "YACC:\treturn_stmt : \"return\" testlist\n");}
 						;
-shift_expr				: arith_expr shift_expr_sub												{D(printf("YACC:\t shift_expr : arith_expr shift_expr_sub\n"));}
+shift_expr				: arith_expr shift_expr_sub												{D(fout_diag << "YACC:\tshift_expr : arith_expr shift_expr_sub\n");}
 						;
-shift_expr_sub			: %empty																{D(printf("YACC:\t shift_expr_sub :  \n"));}
+shift_expr_sub			: %empty																{D(fout_diag << "YACC:\tshift_expr_sub :  \n");}
 						| "<<" expr shift_expr_sub
 						| ">>" expr shift_expr_sub
 						;
-simple_stmt				: small_stmt simple_stmt_sub NEWLINE									{D(printf("YACC:\t simple_stmt : small_stmt simple_stmt_sub NEWLINE\n"));}
+simple_stmt				: small_stmt simple_stmt_sub NEWLINE									{D(fout_diag << "YACC:\tsimple_stmt : small_stmt simple_stmt_sub NEWLINE\n");}
 						| small_stmt simple_stmt_sub ";" NEWLINE
 						;
-simple_stmt_sub			: %empty																{D(printf("YACC:\t simple_stmt_sub : \n"));}
+simple_stmt_sub			: %empty																{D(fout_diag << "YACC:\tsimple_stmt_sub : \n");}
 						| ";" small_stmt simple_stmt_sub
 						;
-single_input			: NEWLINE																{D(printf("YACC:\t single_input : NEWLINE\n"));}
-						| simple_stmt															{D(printf("YACC:\t single_input : simple_stmt\n"));}
-						| compound_stmt NEWLINE													{D(printf("YACC:\t single_input : compound_stmt NEWLINE\n"));}
+single_input			: NEWLINE																{D(fout_diag << "YACC:\tsingle_input : NEWLINE\n");}
+						| simple_stmt															{D(fout_diag << "YACC:\tsingle_input : simple_stmt\n");}
+						| compound_stmt NEWLINE													{D(fout_diag << "YACC:\tsingle_input : compound_stmt NEWLINE\n");}
 						;
 sliceop					: ":"
 						| ":" test
 						;
-small_stmt				: expr_stmt																{D(printf("YACC:\t small_stmt : expr_stmt\n"));}
+small_stmt				: expr_stmt																{D(fout_diag << "YACC:\tsmall_stmt : expr_stmt\n");}
 						| del_stmt
 						| pass_stmt
-						| flow_stmt																{D(printf("YACC:\t small_stmt : flow_stmt\n"));}
+						| flow_stmt																{D(fout_diag << "YACC:\tsmall_stmt : flow_stmt\n");}
 						| import_stmt
 						| global_stmt
 						| nonlocal_stmt
@@ -497,8 +498,8 @@ small_stmt				: expr_stmt																{D(printf("YACC:\t small_stmt : expr_st
 						;
 star_expr				: "*" expr
 						;
-stmt					: simple_stmt															{D(printf("YACC:\t stmt : simple_stmt\n"));}
-						| compound_stmt															{D(printf("YACC:\t stmt : compound_stmt\n"));}
+stmt					: simple_stmt															{D(fout_diag << "YACC:\tstmt : simple_stmt\n");}
+						| compound_stmt															{D(fout_diag << "YACC:\tstmt : compound_stmt\n");}
 						;
 string_plus				: STRING
 						| STRING string_plus
@@ -519,26 +520,26 @@ subscriptlist			: subscript subscriptlist_sub
 subscriptlist_sub		: %empty
 						| "," subscript subscriptlist_sub
 						;
-suite					: simple_stmt															{D(printf("YACC:\t suite : simple_stmt\n"));}							
-						| NEWLINE INDENT suite_sub DEDENT										{D(printf("YACC:\t suite : NEWLINE INDENT suite_sub DEDENT\n"));}
+suite					: simple_stmt															{D(fout_diag << "YACC:\tsuite : simple_stmt\n");}							
+						| NEWLINE INDENT suite_sub DEDENT										{D(fout_diag << "YACC:\tsuite : NEWLINE INDENT suite_sub DEDENT\n");}
 						;
-suite_sub				: stmt																	{D(printf("YACC:\t suite_sub : stmt\n"));}
-						| stmt suite_sub														{D(printf("YACC:\t suite_sub : stmt suite_sub\n"));}
+suite_sub				: stmt																	{D(fout_diag << "YACC:\tsuite_sub : stmt\n");}
+						| stmt suite_sub														{D(fout_diag << "YACC:\tsuite_sub : stmt suite_sub\n");}
 						;
-term					: factor term_sub														{D(printf("YACC:\t term : factor term_sub\n"));}
+term					: factor term_sub														{D(fout_diag << "YACC:\tterm : factor term_sub\n");}
 						;
-term_sub				: %empty																{D(printf("YACC:\t term_sub : \n"));}
-						| "*" factor term_sub													{D(printf("YACC:\t term_sub : \"*\" factor term_sub\n"));}
-						| "@" factor term_sub													{D(printf("YACC:\t term_sub : \"@\" factor term_sub\n"));}
-						| "/" factor term_sub													{D(printf("YACC:\t term_sub : \"/\" factor term_sub\n"));}
-						| "%" factor term_sub													{D(printf("YACC:\t term_sub : \"$\" factor term_sub\n"));}
-						| "//" factor term_sub													{D(printf("YACC:\t term_sub : \"//\" factor term_sub\n"));}
+term_sub				: %empty																{D(fout_diag << "YACC:\tterm_sub : \n");}
+						| "*" factor term_sub													{D(fout_diag << "YACC:\tterm_sub : \"*\" factor term_sub\n");}
+						| "@" factor term_sub													{D(fout_diag << "YACC:\tterm_sub : \"@\" factor term_sub\n");}
+						| "/" factor term_sub													{D(fout_diag << "YACC:\tterm_sub : \"/\" factor term_sub\n");}
+						| "%" factor term_sub													{D(fout_diag << "YACC:\tterm_sub : \"$\" factor term_sub\n");}
+						| "//" factor term_sub													{D(fout_diag << "YACC:\tterm_sub : \"//\" factor term_sub\n");}
 						;
-test					: or_test																{D(printf("YACC:\t test : or_test\n"));}
+test					: or_test																{D(fout_diag << "YACC:\ttest : or_test\n");}
 						| or_test "if" or_test "else" test
-						| lambdef																{D(printf("YACC:\t test : lambdef\n"));}
+						| lambdef																{D(fout_diag << "YACC:\ttest : lambdef\n");}
 						;
-testlist				: test testlist_sub														{D(printf("YACC:\t testlist : test testlist_sub\n"));}
+testlist				: test testlist_sub														{D(fout_diag << "YACC:\ttestlist : test testlist_sub\n");}
 						| test testlist_sub ","
 						;
 testlist_comp			: testlist_comp_sub_ts comp_for
@@ -554,7 +555,7 @@ testlist_comp_sub_ts	: test
 testlist_star_expr		: dictorsetmaker_sub dictorsetmaker_sub
 						| dictorsetmaker_sub dictorsetmaker_sub ","
 						;
-testlist_sub			: %empty																{D(printf("YACC:\t testlist_sub : \n"));}
+testlist_sub			: %empty																{D(fout_diag << "YACC:\ttestlist_sub : \n");}
 						| "," test testlist_sub
 						;
 test_nocond				: or_test
@@ -563,13 +564,13 @@ test_nocond				: or_test
 tfpdef					: NAME 
 						| NAME ":" test
 						;
-trailer					: "(" ")"																{D(printf("YACC:\t trailer : \"(\" \")\"\n"));}
-						| "(" arglist ")"														{D(printf("YACC:\t trailer : \"(\" arglist \")\"\n"));}
-						| "[" subscriptlist "]"													{D(printf("YACC:\t trailer : \"[\" subscriptlist \"]\"\n"));}
-						| "." NAME																{D(printf("YACC:\t trailer : \".\" NAME\n"));}
+trailer					: "(" ")"																{D(fout_diag << "YACC:\ttrailer : \"(\" \")\"\n");}
+						| "(" arglist ")"														{D(fout_diag << "YACC:\ttrailer : \"(\" arglist \")\"\n");}
+						| "[" subscriptlist "]"													{D(fout_diag << "YACC:\ttrailer : \"[\" subscriptlist \"]\"\n");}
+						| "." NAME																{D(fout_diag << "YACC:\ttrailer : \".\" NAME\n");}
 						;
-trailer_star			: %empty																{D(printf("YACC:\t trailer_star : \n"));}
-						| trailer trailer_star													{D(printf("YACC:\t trailer_star : trailer trailer_star\n"));}
+trailer_star			: %empty																{D(fout_diag << "YACC:\ttrailer_star : \n");}
+						| trailer trailer_star													{D(fout_diag << "YACC:\ttrailer_star : trailer trailer_star\n");}
 						;
 try_stmt				: "try" ":" suite try_stmt_sub
 						;
@@ -647,9 +648,9 @@ with_stmt				: "with" with_item with_stmt_sub ":" suite
 with_stmt_sub			: %empty
 						| "," with_item with_stmt_sub
 						;
-xor_expr				: and_expr xor_expr_sub													{D(printf("YACC:\t xor_expr : and_expr xor_expr_sub\n"));}
+xor_expr				: and_expr xor_expr_sub													{D(fout_diag << "YACC:\txor_expr : and_expr xor_expr_sub\n");}
 						;
-xor_expr_sub			: %empty																{D(printf("YACC:\t xor_expr_sub : \n"));}
+xor_expr_sub			: %empty																{D(fout_diag << "YACC:\txor_expr_sub : \n");}
 						| "^" and_expr xor_expr_sub
 						;
 yield_arg				: "from" test
@@ -663,7 +664,6 @@ yield_stmt				: yield_expr
 %%
 
 int main(int argc, char * argv[]) {
-	ofstream fout;
 	if (argc != 2) {
 		fprintf(stderr, "1 argument required!");
 		exit(1);
@@ -674,47 +674,48 @@ int main(int argc, char * argv[]) {
 		exit(1);
 	}
 	ReadTokens(fin, T);
-	D(DispTokens(T));
-	D(printf("START PARSING\n"));
-	return yyparse();
+	D(PrintTokens(T));
+	yyparse();
+	fout_diag.close();
+	return 0;
 };
-void DispTokens(TokenTable * T) {
+void PrintTokens(TokenTable * T) {
 	system("CLS");
 	for (int i = 0; i < TOKEN_TABLE_SIZE && T->t[i].availability != 0; i++) {
-		cout << T->t[i].lineno << "\t" << T->t[i].layer << "\t";
+		fout_diag << T->t[i].lineno << "\t" << T->t[i].layer << "\t";
 		switch (T->t[i].type) {
 			case STRING:{
-				cout << "STRING" << "\t" << T->t[i].value.S;
+				fout_diag << "STRING" << "\t" << T->t[i].value.S;
 				break;
 			}
 			case NUMBER:{
-				cout << "NUMBER" << "\t" << T->t[i].value.D;
+				fout_diag << "NUMBER" << "\t" << T->t[i].value.D;
 				break;
 			}
 			case CHAR:{
-				cout << "CHAR" << "\t" << T->t[i].value.C;
+				fout_diag << "CHAR" << "\t" << T->t[i].value.C;
 				break;
 			}
 			case NAME:{
-				cout << "NAME" << "\t" << T->t[i].value.S;
+				fout_diag << "NAME" << "\t" << T->t[i].value.S;
 				break;
 			}
 			case INDENT:{
-				cout << "INDENT";
+				fout_diag << "INDENT";
 				break;
 			}
 			case DEDENT:{
-				cout << "DEDENT";
+				fout_diag << "DEDENT";
 				break;
 			}
 			default:{
-				cout << T->t[i].value.S;
+				fout_diag << T->t[i].value.S;
 				break;
 			}
 		}
-		cout << endl;
+		fout_diag << endl;
 	}
-	cout << endl;
+	fout_diag << endl;
 };
 int ReadTokens(ifstream &f, TokenTable * T) {
 	int layer = 0;
@@ -793,7 +794,6 @@ int ReadTokens(ifstream &f, TokenTable * T) {
 	}
 	T->Size = i;
 	f.close();
-	D(printf("TOKENS READ SUCCESSFULLY\n"));
 	return 0;
 };
 int yylex() {
@@ -805,39 +805,39 @@ int yylex() {
 	switch (T->t[i].type) {
 		case STRING:{
 			yylval.String = T->t[i].value.S;
-			D(printf("LEX:\tSTRING\t%s\n", yylval.String));
+			D(fout_diag << "LEX:\tSTRING\t" << yylval.String << endl);
 			break;
 		}
 		case NUMBER:{
 			yylval.Double = T->t[i].value.D;
-			D(printf("LEX:\tNUMBER\t%lf\n", yylval.Double));
+			D(fout_diag << "LEX:\tNUMBER\t" << yylval.Double << endl);
 			break;
 		}
 		case CHAR:{
 			yylval.Char = T->t[i].value.C;
-			D(printf("LEX:\tCHAR\t%c\n", yylval.Char));
+			D(fout_diag << "LEX:\tCHAR\t" << yylval.Char << endl);
 			break;
 		}
 		case NAME:{
 			yylval.Name = T->t[i].value.S;
-			D(printf("LEX:\tNAME\t%s\n", yylval.Name));
+			D(fout_diag << "LEX:\tNAME\t" << yylval.Name << endl);
 			break;
 		}
 		case INDENT:{
-			D(printf("LEX:\tINDENT\n"));
+			D(fout_diag << "LEX:\tINDENT" << endl);
 			break;
 		}
 		case DEDENT:{
-			D(printf("LEX:\tDEDENT\n"));
+			D(fout_diag << "LEX:\tDEDENT" << endl);
 			break;
 		}
 		case NEWLINE:{
-			D(printf("LEX:\tNEWLINE\n"));
+			D(fout_diag << "LEX:\tNEWLINE" << endl);
 			break;
 		}
 		default:{
 			yylval.Name = T->t[i].value.S;
-			D(printf("LEX:\tDEFAULT\t%s\n", yylval.Name));
+			D(fout_diag << "LEX:\t" << yylval.Name << endl);
 			break;
 		}
 	}
