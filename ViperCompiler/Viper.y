@@ -186,24 +186,20 @@ union YYSTYPE{
 %%
 file_input				: file_input_sub ENDMARKER												{D(fout_diag << "YACC:\tfile_input : file_input_sub ENDMARKER\n");}
 						;
-and_expr				: shift_expr and_expr_sub												{D(fout_diag << "YACC:\tand_expr : shift_expr and_expr_sub\n");}
+and_expr				: shift_expr															{D(fout_diag << "YACC:\tand_expr : shift_expr\n");}
+						| and_expr "&" shift_expr												{D(fout_diag << "YACC:\tand_expr : and_expr \"&\" shift_expr\n");}
 						;
-and_expr_sub			: %empty																{D(fout_diag << "YACC:\tand_expr_sub :  \n");}
-						| "&" shift_expr and_expr_sub
-						;
-and_test				: not_test and_test_sub													{D(fout_diag << "YACC:\tand_test : not_test and_test_sub\n");}
-						;
-and_test_sub			: %empty																{D(fout_diag << "YACC:\tand_test_sub : \n");}
-						| "and" not_test and_test_sub
+and_test				: not_test																{D(fout_diag << "YACC:\tand_test : not_test\n");}
+						| and_test "and" not_test												{D(fout_diag << "YACC:\tand_test : and_test \"and\" not_test\n");}
 						;
 annassign				: ":" test
 						| ":" test "=" test
 						;
-arglist					: argument arglist_sub
-						| argument arglist_sub ","
+arglist					: arglist_sub
+						| arglist_sub ","
 						;
-arglist_sub				: %empty
-						| "," argument arglist_sub
+arglist_sub				: argument
+						| arglist_sub "," argument
 						;
 argument				: test																	{D(fout_diag << "YACC:\targument : test\n");}
 						| test comp_for
@@ -211,11 +207,9 @@ argument				: test																	{D(fout_diag << "YACC:\targument : test\n");}
 						| "**" test
 						| "*" test 
 						;
-arith_expr				: term arith_expr_sub													{D(fout_diag << "YACC:\tarith_expr : term arith_expr_sub\n");}
-						;
-arith_expr_sub			: %empty																{D(fout_diag << "YACC:\tarith_expr_sub : \n");}
-						| "+" term arith_expr_sub												{D(fout_diag << "YACC:\tarith_expr_sub : \"+\" term arith_expr_sub\n");}
-						| "-" term arith_expr_sub												{D(fout_diag << "YACC:\tarith_expr_sub : \"-\" term arith_expr_sub\n");}
+arith_expr				: term																	{D(fout_diag << "YACC:\tarith_expr : term\n");}
+						| arith_expr "+" term													{D(fout_diag << "YACC:\tarith_expr : arith_expr \"+\" term\n");}
+						| arith_expr "-" term													{D(fout_diag << "YACC:\tarith_expr : arith_expr \"-\" term\n");}
 						;
 assert_stmt				: "assert" test
 						| "assert" test "," test
@@ -233,22 +227,16 @@ atom					: "..."
 						| NAME
 						| NUMBER																{D(fout_diag << "YACC:\tatom : NUMBER\n");}
 						| string_plus
-						| "(" atom_sub_yt ")"
-						| "[" atom_sub_t "]"
-						| "{" atom_sub_d "}"
+						| "(" ")"
+						| "(" yield_expr ")"
+						| "(" testlist_comp ")"
+						| "[" "]"
+						| "[" testlist_comp "]"
+						| "{" "}"
+						| "{" dictorsetmaker "}"
 						;
 atom_expr				: atom trailer_star														{D(fout_diag << "YACC:\tatom_expr : atom trailer_star\n");}
 						| AWAIT atom trailer_star
-						;
-atom_sub_d				: %empty
-						| dictorsetmaker
-						;
-atom_sub_t				: %empty
-						| testlist_comp
-						;
-atom_sub_yt				: %empty
-						| yield_expr
-						| testlist_comp
 						;
 augassign				: "+="
 						| "-="
@@ -270,10 +258,8 @@ classdef				: "class" NAME ":" suite												{D(fout_diag << "YACC:\tclassdef
 						| "class" NAME "(" ")" ":" suite
 						| "class" NAME "(" arglist ")" ":" suite
 						;
-comparison				: expr comparison_sub													{D(fout_diag << "YACC:\tcomparison : expr comparison_sub\n");}
-						;
-comparison_sub			: %empty																{D(fout_diag << "YACC:\tcomparison_sub : \n");}
-						| comp_op expr comparison_sub 											{D(fout_diag << "YACC:\tcomparison_sub :  comp_op expr comparison_sub\n");}
+comparison				: expr																	{D(fout_diag << "YACC:\tcomparison : expr\n");}
+						| comparison comp_op expr												{D(fout_diag << "YACC:\tcomparison : comparison comp_op expr\n");}
 						;
 compound_stmt			: if_stmt
 						| while_stmt
@@ -319,25 +305,34 @@ decorator				: "@" dotted_name NEWLINE
 						| "@" dotted_name "(" arglist ")" NEWLINE
 						;
 decorators				: decorator
-						| decorator decorators
+						| decorators decorator
 						;
 del_stmt				: "del" exprlist
 						;
-dictorsetmaker			: dictorsetmaker_tt comp_for
-						| dictorsetmaker_tt dictorsetmaker_tt_sub
-						| dictorsetmaker_tt dictorsetmaker_tt_sub ","
-						| testlist_comp_sub_ts comp_for
-						| testlist_comp_sub_ts dictorsetmaker_sub
-						| testlist_comp_sub_ts dictorsetmaker_sub ","
+dictorsetmaker			: test ":" test comp_for
+						| test ":" test dictorsetmaker_sub
+						| test ":" test dictorsetmaker_sub ","
+						| "**" expr comp_for
+						| "**" expr dictorsetmaker_sub
+						| "**" expr dictorsetmaker_sub ","
+						| test comp_for
+						| test dictorsetmaker_lsub
+						| test dictorsetmaker_lsub ","
+						| star_expr comp_for
+						| star_expr dictorsetmaker_lsub
+						| star_expr dictorsetmaker_lsub ","
 						;
 dictorsetmaker_sub		: %empty
-						| "," testlist_comp_sub_ts dictorsetmaker_sub
+						| "," test ":" test
+						| "," "**" expr
+						| dictorsetmaker_sub "," test ":" test
+						| dictorsetmaker_sub "," "**" expr
 						;
-dictorsetmaker_tt		: test ":" test
-						| "**" expr
-						;
-dictorsetmaker_tt_sub	: %empty
-						| "," dictorsetmaker_tt dictorsetmaker_tt_sub
+dictorsetmaker_lsub		: %empty
+						| "," test
+						| "," star_expr
+						| dictorsetmaker_lsub "," test
+						| dictorsetmaker_lsub "," star_expr
 						;
 dotted_as_name			: dotted_name
 						| dotted_name "as" NAME
@@ -350,8 +345,8 @@ dotted_name				: NAME
 						;
 dot_plus				: "."
 						| "..."
-						| "." dot_plus
-						| "..." dot_plus
+						| dot_plus "."
+						| dot_plus "..."
 						;
 eval_input				: testlist eval_input_sub ENDMARKER
 						;
@@ -369,23 +364,19 @@ exprlist_es				: expr
 						| star_expr
 						;
 exprlist_sub			: %empty
-						| "," exprlist_es exprlist_sub
+						| exprlist_sub "," exprlist_es
 						;
-expr					: xor_expr expr_sub														{D(fout_diag << "YACC:\texpr : xor_expr expr_sub\n");}
+expr					: xor_expr																{D(fout_diag << "YACC:\texpr : xor_expr\n");}
+						| expr "|" xor_expr														{D(fout_diag << "YACC:\texpr : expr \"|\" xor_expr\n");}
 						;
-expr_sub				: %empty																{D(fout_diag << "YACC:\texpr_sub : \n");}
-						| "|" xor_expr expr_sub
-						;
-expr_stmt				: testlist_star_expr expr_stmt_sub
-						;
-expr_stmt_sub			: annassign
-						| augassign yield_expr
-						| augassign testlist
-						| expr_stmt_sub_sub
+expr_stmt				: testlist_star_expr annassign
+						| testlist_star_expr augassign yield_expr
+						| testlist_star_expr augassign testlist
+						| testlist_star_expr expr_stmt_sub_sub
 						;
 expr_stmt_sub_sub		: %empty
-						| "=" yield_expr expr_stmt_sub_sub
-						| "=" testlist_star_expr expr_stmt_sub_sub
+						| expr_stmt_sub_sub "=" yield_expr
+						| expr_stmt_sub_sub "=" testlist_star_expr
 						;
 factor					: power																	{D(fout_diag << "YACC:\tfactor : power\n");}
 						| "+" factor															{D(fout_diag << "YACC:\tfactor : \"+\" factor\n");}
@@ -393,8 +384,8 @@ factor					: power																	{D(fout_diag << "YACC:\tfactor : power\n");}
 						| "~" factor															{D(fout_diag << "YACC:\tfactor : \"~\" factor\n");}
 						;
 file_input_sub			: %empty																{D(fout_diag << "YACC:\tfile_input_sub : \n");}
-						| NEWLINE file_input_sub												{D(fout_diag << "YACC:\tfile_input_sub : NEWLINE file_input_sub\n");}
-						| stmt file_input_sub													{D(fout_diag << "YACC:\tfile_input_sub : stmt file_input_sub\n");}
+						| file_input_sub NEWLINE												{D(fout_diag << "YACC:\tfile_input_sub : file_input_sub NEWLINE\n");}
+						| file_input_sub stmt													{D(fout_diag << "YACC:\tfile_input_sub : file_input_sub stmt\n");}
 						;
 flow_stmt				: break_stmt
 						| continue_stmt
@@ -415,7 +406,7 @@ if_stmt					: "if" test ":" suite if_stmt_sub
 						| "if" test ":" suite if_stmt_sub "else" ":" suite
 						;
 if_stmt_sub				: %empty
-						| "elif" test ":" suite if_stmt_sub
+						| if_stmt_sub "elif" test ":" suite
 						;
 import_as_name			: NAME
 						| NAME "as" NAME
@@ -448,10 +439,8 @@ nonlocal_stmt			: "nonlocal" NAME
 not_test				: "not" not_test
 						| comparison															{D(fout_diag << "YACC:\tnot_test : comparison\n");}
 						;
-or_test					: and_test or_test_sub													{D(fout_diag << "YACC:\tor_test : and_test or_test_sub\n");}
-						;
-or_test_sub				: %empty																{D(fout_diag << "YACC:\tor_test_sub : \n");}
-						| "or" and_test or_test_sub
+or_test					: and_test																{D(fout_diag << "YACC:\tor_test : and_test\n");}
+						| or_test "or" and_test													{D(fout_diag << "YACC:\tor_test : or_test \"or\" and_test\n");}
 						;
 parameters				: "(" ")"																{D(fout_diag << "YACC:\tparameters : \"(\" \")\"\n");}
 						| "(" typedargslist ")"													{D(fout_diag << "YACC:\tparameters : \"(\" typedargslist \")\"\n");}
@@ -468,17 +457,15 @@ raise_stmt				: "raise"
 return_stmt				: "return"																{D(fout_diag << "YACC:\treturn_stmt : \"return\"\n");}
 						| "return" testlist														{D(fout_diag << "YACC:\treturn_stmt : \"return\" testlist\n");}
 						;
-shift_expr				: arith_expr shift_expr_sub												{D(fout_diag << "YACC:\tshift_expr : arith_expr shift_expr_sub\n");}
-						;
-shift_expr_sub			: %empty																{D(fout_diag << "YACC:\tshift_expr_sub :  \n");}
-						| "<<" expr shift_expr_sub
-						| ">>" expr shift_expr_sub
+shift_expr				: arith_expr															{D(fout_diag << "YACC:\tshift_expr : arith_expr\n");}
+						| shift_expr "<<" arith_expr											{D(fout_diag << "YACC:\tshift_expr : shift_expr \"<<\" arith_expr\n");}
+						| shift_expr ">>" arith_expr											{D(fout_diag << "YACC:\tshift_expr : shift_expr \">>\" arith_expr\n");}
 						;
 simple_stmt				: small_stmt simple_stmt_sub NEWLINE									{D(fout_diag << "YACC:\tsimple_stmt : small_stmt simple_stmt_sub NEWLINE\n");}
 						| small_stmt simple_stmt_sub ";" NEWLINE
 						;
 simple_stmt_sub			: %empty																{D(fout_diag << "YACC:\tsimple_stmt_sub : \n");}
-						| ";" small_stmt simple_stmt_sub
+						| simple_stmt_sub ";" small_stmt
 						;
 single_input			: NEWLINE																{D(fout_diag << "YACC:\tsingle_input : NEWLINE\n");}
 						| simple_stmt															{D(fout_diag << "YACC:\tsingle_input : simple_stmt\n");}
@@ -514,49 +501,49 @@ subscript				: test
 						| test ":" test
 						| test ":" test sliceop
 						;
-subscriptlist			: subscript subscriptlist_sub
-						| subscript subscriptlist_sub ","
+subscriptlist			: subscriptlist_sub
+						| subscriptlist_sub ","
 						;
-subscriptlist_sub		: %empty
-						| "," subscript subscriptlist_sub
+subscriptlist_sub		: subscript
+						| subscriptlist_sub "," subscript 
 						;
-suite					: simple_stmt															{D(fout_diag << "YACC:\tsuite : simple_stmt\n");}							
+suite					: simple_stmt															{D(fout_diag << "YACC:\tsuite : simple_stmt\n");}
 						| NEWLINE INDENT suite_sub DEDENT										{D(fout_diag << "YACC:\tsuite : NEWLINE INDENT suite_sub DEDENT\n");}
 						;
 suite_sub				: stmt																	{D(fout_diag << "YACC:\tsuite_sub : stmt\n");}
-						| stmt suite_sub														{D(fout_diag << "YACC:\tsuite_sub : stmt suite_sub\n");}
+						| suite_sub stmt														{D(fout_diag << "YACC:\tsuite_sub : suite_sub stmt\n");}
 						;
-term					: factor term_sub														{D(fout_diag << "YACC:\tterm : factor term_sub\n");}
-						;
-term_sub				: %empty																{D(fout_diag << "YACC:\tterm_sub : \n");}
-						| "*" factor term_sub													{D(fout_diag << "YACC:\tterm_sub : \"*\" factor term_sub\n");}
-						| "@" factor term_sub													{D(fout_diag << "YACC:\tterm_sub : \"@\" factor term_sub\n");}
-						| "/" factor term_sub													{D(fout_diag << "YACC:\tterm_sub : \"/\" factor term_sub\n");}
-						| "%" factor term_sub													{D(fout_diag << "YACC:\tterm_sub : \"$\" factor term_sub\n");}
-						| "//" factor term_sub													{D(fout_diag << "YACC:\tterm_sub : \"//\" factor term_sub\n");}
+term					: factor																{D(fout_diag << "YACC:\tterm : factor\n");}
+						| term "*" factor														{D(fout_diag << "YACC:\tterm : term \"*\" factor\n");}
+						| term "@" factor														{D(fout_diag << "YACC:\tterm : term \"@\" factor\n");}
+						| term "/" factor														{D(fout_diag << "YACC:\tterm : term \"/\" factor\n");}
+						| term "%" factor														{D(fout_diag << "YACC:\tterm : term \"%\" factor\n");}
+						| term "//" factor														{D(fout_diag << "YACC:\tterm : term \"//\" factor\n");}
 						;
 test					: or_test																{D(fout_diag << "YACC:\ttest : or_test\n");}
 						| or_test "if" or_test "else" test
 						| lambdef																{D(fout_diag << "YACC:\ttest : lambdef\n");}
 						;
-testlist				: test testlist_sub														{D(fout_diag << "YACC:\ttestlist : test testlist_sub\n");}
-						| test testlist_sub ","
+testlist				: testlist_sub														{D(fout_diag << "YACC:\ttestlist : test testlist_sub\n");}
+						| testlist_sub ","
 						;
 testlist_comp			: testlist_comp_sub_ts comp_for
 						| testlist_comp_sub_ts testlist_comp_sub_co
 						| testlist_comp_sub_ts testlist_comp_sub_co ","
 						;
 testlist_comp_sub_co	: %empty
-						| "," testlist_comp_sub_ts testlist_comp_sub_co
+						| testlist_comp_sub_co "," testlist_comp_sub_ts
 						;		
 testlist_comp_sub_ts	: test
 						| star_expr
 						;
-testlist_star_expr		: dictorsetmaker_sub dictorsetmaker_sub
-						| dictorsetmaker_sub dictorsetmaker_sub ","
+testlist_star_expr		: test dictorsetmaker_lsub
+						| test dictorsetmaker_lsub ","
+						| star_expr dictorsetmaker_lsub
+						| star_expr dictorsetmaker_lsub ","
 						;
-testlist_sub			: %empty																{D(fout_diag << "YACC:\ttestlist_sub : \n");}
-						| "," test testlist_sub
+testlist_sub			: test																{D(fout_diag << "YACC:\ttestlist_sub : \n");}
+						| testlist_sub "," test
 						;
 test_nocond				: or_test
 						| lambdef_nocond
@@ -570,20 +557,16 @@ trailer					: "(" ")"																{D(fout_diag << "YACC:\ttrailer : \"(\" \")
 						| "." NAME																{D(fout_diag << "YACC:\ttrailer : \".\" NAME\n");}
 						;
 trailer_star			: %empty																{D(fout_diag << "YACC:\ttrailer_star : \n");}
-						| trailer trailer_star													{D(fout_diag << "YACC:\ttrailer_star : trailer trailer_star\n");}
+						| trailer_star trailer													{D(fout_diag << "YACC:\ttrailer_star : trailer_star trailer\n");}
 						;
 try_stmt				: "try" ":" suite try_stmt_sub
+						| "try" ":" suite try_stmt_sub "finally" ":" suite
+						| "try" ":" suite try_stmt_sub "else" ":" suite 
+						| "try" ":" suite try_stmt_sub "else" ":" suite "finally" ":" suite
+						| "try" ":" suite "finally" ":" suite
 						;
-try_stmt_sub			: try_stmt_sub_plus
-						| try_stmt_sub_plus try_stmt_sub_sub
-						| try_stmt_sub_plus "else" ":" suite
-						| try_stmt_sub_plus "else" ":" suite try_stmt_sub_sub
-						| try_stmt_sub_sub
-						;
-try_stmt_sub_plus		: except_clause ":" suite
-						| except_clause ":" suite try_stmt_sub_plus
-						;
-try_stmt_sub_sub		: "finally" ":" suite
+try_stmt_sub			: except_clause ":" suite
+						| try_stmt_sub except_clause ":" suite
 						;
 typedargslist			: tfpdef  typedargslist_ct typedargslist_long
 						| tfpdef "=" test typedargslist_ct typedargslist_long
@@ -595,8 +578,8 @@ typedargslist			: tfpdef  typedargslist_ct typedargslist_long
 						| "**" tfpdef ","
 						;
 typedargslist_ct		: %empty
-						| "," tfpdef typedargslist_ct
-						| "," tfpdef "=" test typedargslist_ct
+						| typedargslist_ct "," tfpdef
+						| typedargslist_ct "," tfpdef "=" test
 						;
 typedargslist_long		: %empty
 						| "," 
@@ -624,16 +607,16 @@ varargslist_another_sub	: varargslist_sub
 						| varargslist_sub "," "**" vfpdef ","
 						;
 varargslist_sub			: %empty
-						| "," vfpdef varargslist_sub
-						| "," vfpdef "=" test varargslist_sub
+						| varargslist_sub "," vfpdef
+						| varargslist_sub "," vfpdef "=" test
 						;
 varargslist_sub_sub		: varargslist_sub
 						| varargslist_sub ","
 						| varargslist_sub "," "**" vfpdef
 						| varargslist_sub "," "**" vfpdef ","
 						;
-varargslist_sub_sub_sub	: vfpdef varargslist_sub_sub
-						| varargslist_sub_sub
+varargslist_sub_sub_sub	: varargslist_sub_sub
+						| vfpdef varargslist_sub_sub
 						;
 vfpdef					: NAME
 						;
@@ -643,15 +626,13 @@ while_stmt				: "while" test ":" suite
 with_item				: test
 						| test "as" expr
 						;
-with_stmt				: "with" with_item with_stmt_sub ":" suite
+with_stmt				: "with" with_stmt_sub ":" suite
 						;
-with_stmt_sub			: %empty
-						| "," with_item with_stmt_sub
+with_stmt_sub			: with_item
+						| with_stmt_sub "," with_item
 						;
-xor_expr				: and_expr xor_expr_sub													{D(fout_diag << "YACC:\txor_expr : and_expr xor_expr_sub\n");}
-						;
-xor_expr_sub			: %empty																{D(fout_diag << "YACC:\txor_expr_sub : \n");}
-						| "^" and_expr xor_expr_sub
+xor_expr				: and_expr																{D(fout_diag << "YACC:\txor_expr : and_expr\n");}
+						| xor_expr "^" and_expr													{D(fout_diag << "YACC:\txor_expr : xor_expr \"^\" and_expr\n");}
 						;
 yield_arg				: "from" test
 						| testlist
