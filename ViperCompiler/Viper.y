@@ -87,7 +87,7 @@ union YYSTYPE{
 };
 %}
 
-%define api.value.type {union YYSTYPE}
+%define api.value.type		{union YYSTYPE}
 %token	<Double>			NUMBER
 %token	<Char>				CHAR
 %token	<Name>				NAME
@@ -514,11 +514,11 @@ suite_sub				: stmt																	{D(fout_diag << "YACC:\tsuite_sub : stmt\n")
 						| suite_sub stmt														{D(fout_diag << "YACC:\tsuite_sub : suite_sub stmt\n");}
 						;
 term					: factor																{D(fout_diag << "YACC:\tterm : factor\n");}
-						| term "*" factor														{D(fout_diag << "YACC:\tterm : term \"*\" factor\n");}
+						| term "*" factor														{D(fout_diag << "YACC:\tterm : term \"*\" factor\n"); /*$$ = $1 * $3*/}
 						| term "@" factor														{D(fout_diag << "YACC:\tterm : term \"@\" factor\n");}
-						| term "/" factor														{D(fout_diag << "YACC:\tterm : term \"/\" factor\n");}
-						| term "%" factor														{D(fout_diag << "YACC:\tterm : term \"%\" factor\n");}
-						| term "//" factor														{D(fout_diag << "YACC:\tterm : term \"//\" factor\n");}
+						| term "/" factor														{D(fout_diag << "YACC:\tterm : term \"/\" factor\n"); /*$$ = $1 / $3*/}
+						| term "%" factor														{D(fout_diag << "YACC:\tterm : term \"%\" factor\n"); /*$$ = $1 % $3*/}
+						| term "//" factor														{D(fout_diag << "YACC:\tterm : term \"//\" factor\n"); /*$$ = int($1 / $3)*/}
 						;
 test					: or_test																{D(fout_diag << "YACC:\ttest : or_test\n");}
 						| or_test "if" or_test "else" test
@@ -552,8 +552,8 @@ tfpdef					: NAME
 						| NAME ":" test
 						;
 trailer					: "(" ")"																{D(fout_diag << "YACC:\ttrailer : \"(\" \")\"\n");}
-						| "(" arglist ")"														{D(fout_diag << "YACC:\ttrailer : \"(\" arglist \")\"\n");}
-						| "[" subscriptlist "]"													{D(fout_diag << "YACC:\ttrailer : \"[\" subscriptlist \"]\"\n");}
+						| "(" arglist ")"														{D(fout_diag << "YACC:\ttrailer : \"(\" arglist \")\"\n"); /*$$ = $2*/}
+						| "[" subscriptlist "]"													{D(fout_diag << "YACC:\ttrailer : \"[\" subscriptlist \"]\"\n"); /*$$ = $2*/}
 						| "." NAME																{D(fout_diag << "YACC:\ttrailer : \".\" NAME\n");}
 						;
 trailer_star			: %empty																{D(fout_diag << "YACC:\ttrailer_star : \n");}
