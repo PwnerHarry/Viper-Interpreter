@@ -1,0 +1,6 @@
+#include "ctype.h"
+#include "string.h"
+#include "iostream"
+#include "math.h"
+#include "class.h"
+#include "functions.h"

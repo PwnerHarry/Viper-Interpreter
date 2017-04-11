@@ -7,8 +7,8 @@ del /F /S /Q tokens.txt
 del /F /S /Q Viper.tab.c
 del /F /S /Q Viper.tab.h
 del /F /S /Q PROCESS.log
-bison -d Viper.y
-flex ViperFirstLexer.l
+Accessories\bison -d Viper.y
+Accessories\flex Viper.l
 g++ lex.yy.cc
 ren a.exe ViperL.exe
 ViperL Test.vi
@@ -18,3 +18,4 @@ del /F /S /Q a.exe
 g++ Viper.tab.c
 ren a.exe ViperS.exe
 ViperS tokens.txt
+pause

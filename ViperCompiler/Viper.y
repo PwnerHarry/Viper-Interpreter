@@ -1,97 +1,26 @@
 %{
 using namespace std;
-#include "ctype.h"
-#include "string.h"
-#include "iostream"
 #include "fstream"
-#include "math.h"
-#define D(x) if (!VIPER_COMPILER_DIAGNOSE) ; else x
-
 const int TOKEN_TABLE_SIZE = 4096;
 const int VIPER_COMPILER_DIAGNOSE = 1;
 ofstream fout_diag("PROCESS.log", ios::out);
-class Token {
-public:
-	int lineno;
-	int type;
-	int layer;
-	int availability;
-	union {
-		double D;
-		int I;
-		char * S;
-		char C;
-	} value;
-	Token(){
-		layer = 0;
-		availability = 0;
-		lineno = 0;
-		type = 0;
-		value.D = 0;
-		value.C = 0;
-		value.S = 0;
-		value.I = 0;
-	};
-};
-class TokenTable {
-public:
-	int Pointer;
-	int Size;
-	Token * t;
-	TokenTable() {
-		Size = 0;
-		t = new Token[TOKEN_TABLE_SIZE];
-		Pointer = 0;
-	}
-};
-typedef union {
-	int Int;
-	double Double;
-	char * String;
-	char Char;
-} Arg;
-class Function {
-	char * name;
-	Arg * Arguments;
-	TokenTable * Definations;
-	char * Return;
-};
-int yylex();
-int ReadTokens(ifstream &f, TokenTable * T);
-void PrintTokens(TokenTable * T);
-void yyerror(char *s);
+#include "stdafx.h"
+#define D(x) if (!VIPER_COMPILER_DIAGNOSE) ; else x
 TokenTable * T = new TokenTable;
-class function {
-public:
-	char * name;
-	union {
-		int ret_int;
-		int ret_double;
-		int ret_void;
-	} Return;
-	function() {
-		name = 0;
-		Return.ret_int = 0;
-		Return.ret_double = 0;
-		Return.ret_void = 1;
-	}
-};
 union YYSTYPE{
-	int Int;
-	double Double;
+	double Number;
 	char * String;
 	char * Name;
 	char Char;
 	bool Bool;
-	function * Function;
 };
 %}
 
 %define api.value.type		{union YYSTYPE}
-%token	<Double>			NUMBER
-%token	<Char>				CHAR
+%token	<Number>			NUMBER
+%token	<String>			CHAR
 %token	<Name>				NAME
-%token	<String>			STRING
+%token	<Char>				STRING
 %token	INDENT
 %token	DEDENT
 %token	ENDMARKER
@@ -176,7 +105,6 @@ union YYSTYPE{
 %token	RIGHTSHIFT			">>"
 %token	RIGHTSHIFTEQUAL		">>="
 %token	RARROW				"->"
-
 %precedence "="
 %left "-" "+"
 %left "*" "/"
@@ -184,13 +112,13 @@ union YYSTYPE{
 %right "**" /* exponentiation */
 
 %%
-file_input				: file_input_sub ENDMARKER												{D(fout_diag << "YACC:\tfile_input : file_input_sub ENDMARKER\n");}
+file_input				: file_input_sub ENDMARKER												{D(fout_diag << "BISON:\tfile_input : file_input_sub ENDMARKER\n");}
 						;
-and_expr				: shift_expr															{D(fout_diag << "YACC:\tand_expr : shift_expr\n");}
-						| and_expr "&" shift_expr												{D(fout_diag << "YACC:\tand_expr : and_expr \"&\" shift_expr\n");}
+and_expr				: shift_expr															{D(fout_diag << "BISON:\tand_expr : shift_expr\n");}
+						| and_expr "&" shift_expr												{D(fout_diag << "BISON:\tand_expr : and_expr \"&\" shift_expr\n");}
 						;
-and_test				: not_test																{D(fout_diag << "YACC:\tand_test : not_test\n");}
-						| and_test "and" not_test												{D(fout_diag << "YACC:\tand_test : and_test \"and\" not_test\n");}
+and_test				: not_test																{D(fout_diag << "BISON:\tand_test : not_test\n");}
+						| and_test "and" not_test												{D(fout_diag << "BISON:\tand_test : and_test \"and\" not_test\n");}
 						;
 annassign				: ":" test
 						| ":" test "=" test
@@ -201,15 +129,15 @@ arglist					: arglist_sub
 arglist_sub				: argument
 						| arglist_sub "," argument
 						;
-argument				: test																	{D(fout_diag << "YACC:\targument : test\n");}
+argument				: test																	{D(fout_diag << "BISON:\targument : test\n");}
 						| test comp_for
 						| test "=" test
 						| "**" test
 						| "*" test 
 						;
-arith_expr				: term																	{D(fout_diag << "YACC:\tarith_expr : term\n");}
-						| arith_expr "+" term													{D(fout_diag << "YACC:\tarith_expr : arith_expr \"+\" term\n");}
-						| arith_expr "-" term													{D(fout_diag << "YACC:\tarith_expr : arith_expr \"-\" term\n");}
+arith_expr				: term																	{D(fout_diag << "BISON:\tarith_expr : term\n");}
+						| arith_expr "+" term													{D(fout_diag << "BISON:\tarith_expr : arith_expr \"+\" term\n");}
+						| arith_expr "-" term													{D(fout_diag << "BISON:\tarith_expr : arith_expr \"-\" term\n");}
 						;
 assert_stmt				: "assert" test
 						| "assert" test "," test
@@ -221,11 +149,11 @@ async_stmt				: ASYNC funcdef
 						| ASYNC for_stmt
 						;
 atom					: "..."
-						| "None"
-						| "True"
-						| "False"
-						| NAME
-						| NUMBER																{D(fout_diag << "YACC:\tatom : NUMBER\n");}
+						| "None"										
+						| "True"																{$<Bool>1 = true; $<Bool>$ = $<Bool>1;}
+						| "False"																{$<Bool>1 = false; $<Bool>$ = $<Bool>1;}
+						| NAME																	{$<Name>$ = $<Name>1;}
+						| NUMBER																{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tatom : NUMBER\n");}
 						| string_plus
 						| "(" ")"
 						| "(" yield_expr ")"
@@ -235,7 +163,7 @@ atom					: "..."
 						| "{" "}"
 						| "{" dictorsetmaker "}"
 						;
-atom_expr				: atom trailer_star														{D(fout_diag << "YACC:\tatom_expr : atom trailer_star\n");}
+atom_expr				: atom trailer_star														{D(fout_diag << "BISON:\tatom_expr : atom trailer_star\n");}
 						| AWAIT atom trailer_star
 						;
 augassign				: "+="
@@ -254,19 +182,19 @@ augassign				: "+="
 						;
 break_stmt				: "break"
 						;
-classdef				: "class" NAME ":" suite												{D(fout_diag << "YACC:\tclassdef : \"class\" NAME : suite\n");}
+classdef				: "class" NAME ":" suite												{D(fout_diag << "BISON:\tclassdef : \"class\" NAME : suite\n");}
 						| "class" NAME "(" ")" ":" suite
 						| "class" NAME "(" arglist ")" ":" suite
 						;
-comparison				: expr																	{D(fout_diag << "YACC:\tcomparison : expr\n");}
-						| comparison comp_op expr												{D(fout_diag << "YACC:\tcomparison : comparison comp_op expr\n");}
+comparison				: expr																	{D(fout_diag << "BISON:\tcomparison : expr\n");}
+						| comparison comp_op expr												{D(fout_diag << "BISON:\tcomparison : comparison comp_op expr\n");}
 						;
 compound_stmt			: if_stmt
 						| while_stmt
 						| for_stmt
 						| try_stmt
 						| with_stmt
-						| funcdef																{D(fout_diag << "YACC:\tcompound_stmt : funcdef\n");}
+						| funcdef																{D(fout_diag << "BISON:\tcompound_stmt : funcdef\n");}
 						| classdef
 						| decorated
 						| async_stmt
@@ -282,17 +210,17 @@ comp_if					: "if" test_nocond
 comp_iter				: comp_for
 						| comp_if
 						;
-comp_op					: "<"																	{D(fout_diag << "YACC:\tcomp_op : \"<\"\n");}
-						| ">" 																	{D(fout_diag << "YACC:\tcomp_op : \">\"\n");}
-						| "==" 																	{D(fout_diag << "YACC:\tcomp_op : \"==\"\n");}
-						| ">="																	{D(fout_diag << "YACC:\tcomp_op : \">=\"\n");}
-						| "<="																	{D(fout_diag << "YACC:\tcomp_op : \"<=\"\n");}
-						| "<>"																	{D(fout_diag << "YACC:\tcomp_op : \"<>\"\n");}
-						| "!="																	{D(fout_diag << "YACC:\tcomp_op : \"!=\"\n");}
-						| "in"																	{D(fout_diag << "YACC:\tcomp_op : \"in\"\n");}
-						| "not" "in"															{D(fout_diag << "YACC:\tcomp_op : \"not\" \"in\"\n");}
-						| "is"																	{D(fout_diag << "YACC:\tcomp_op : \"is\"\n");}
-						| "is" "not"															{D(fout_diag << "YACC:\tcomp_op : \"is\" \"not\"\n");}
+comp_op					: "<"																	{D(fout_diag << "BISON:\tcomp_op : \"<\"\n");}
+						| ">" 																	{D(fout_diag << "BISON:\tcomp_op : \">\"\n");}
+						| "==" 																	{D(fout_diag << "BISON:\tcomp_op : \"==\"\n");}
+						| ">="																	{D(fout_diag << "BISON:\tcomp_op : \">=\"\n");}
+						| "<="																	{D(fout_diag << "BISON:\tcomp_op : \"<=\"\n");}
+						| "<>"																	{D(fout_diag << "BISON:\tcomp_op : \"<>\"\n");}
+						| "!="																	{D(fout_diag << "BISON:\tcomp_op : \"!=\"\n");}
+						| "in"																	{D(fout_diag << "BISON:\tcomp_op : \"in\"\n");}
+						| "not" "in"															{D(fout_diag << "BISON:\tcomp_op : \"not\" \"in\"\n");}
+						| "is"																	{D(fout_diag << "BISON:\tcomp_op : \"is\"\n");}
+						| "is" "not"															{D(fout_diag << "BISON:\tcomp_op : \"is\" \"not\"\n");}
 						;
 continue_stmt			: "continue"
 						;
@@ -366,8 +294,8 @@ exprlist_es				: expr
 exprlist_sub			: %empty
 						| exprlist_sub "," exprlist_es
 						;
-expr					: xor_expr																{D(fout_diag << "YACC:\texpr : xor_expr\n");}
-						| expr "|" xor_expr														{D(fout_diag << "YACC:\texpr : expr \"|\" xor_expr\n");}
+expr					: xor_expr																{D(fout_diag << "BISON:\texpr : xor_expr\n");}
+						| expr "|" xor_expr														{D(fout_diag << "BISON:\texpr : expr \"|\" xor_expr\n");}
 						;
 expr_stmt				: testlist_star_expr annassign
 						| testlist_star_expr augassign yield_expr
@@ -378,26 +306,26 @@ expr_stmt_sub_sub		: %empty
 						| expr_stmt_sub_sub "=" yield_expr
 						| expr_stmt_sub_sub "=" testlist_star_expr
 						;
-factor					: power																	{D(fout_diag << "YACC:\tfactor : power\n");}
-						| "+" factor															{D(fout_diag << "YACC:\tfactor : \"+\" factor\n");}
-						| "-" factor															{D(fout_diag << "YACC:\tfactor : \"-\" factor\n");}
-						| "~" factor															{D(fout_diag << "YACC:\tfactor : \"~\" factor\n");}
+factor					: power																	{D(fout_diag << "BISON:\tfactor : power\n");}
+						| "+" factor															{D(fout_diag << "BISON:\tfactor : \"+\" factor\n");}
+						| "-" factor															{D(fout_diag << "BISON:\tfactor : \"-\" factor\n");}
+						| "~" factor															{D(fout_diag << "BISON:\tfactor : \"~\" factor\n");}
 						;
-file_input_sub			: %empty																{D(fout_diag << "YACC:\tfile_input_sub : \n");}
-						| file_input_sub NEWLINE												{D(fout_diag << "YACC:\tfile_input_sub : file_input_sub NEWLINE\n");}
-						| file_input_sub stmt													{D(fout_diag << "YACC:\tfile_input_sub : file_input_sub stmt\n");}
+file_input_sub			: %empty																{D(fout_diag << "BISON:\tfile_input_sub : \n");}
+						| file_input_sub NEWLINE												{D(fout_diag << "BISON:\tfile_input_sub : file_input_sub NEWLINE\n");}
+						| file_input_sub stmt													{D(fout_diag << "BISON:\tfile_input_sub : file_input_sub stmt\n");}
 						;
 flow_stmt				: break_stmt
 						| continue_stmt
-						| return_stmt															{D(fout_diag << "YACC:\tflow_stmt : return_stmt\n");}
+						| return_stmt															{D(fout_diag << "BISON:\tflow_stmt : return_stmt\n");}
 						| raise_stmt
 						| yield_stmt
 						;
 for_stmt				: "for" exprlist "in" testlist ":" suite
 						| "for" exprlist "in" testlist ":" suite "else" ":" suite
 						;
-funcdef					: "def" NAME parameters ":" suite										{D(fout_diag << "YACC:\tfuncdef : \"def\" NAME parameters \":\" suite\n");}
-						| "def" NAME parameters "->" test ":" suite								{D(fout_diag << "YACC:\tfuncdef : \"def\" NAME parameters \"->\" test \":\" suite\n");}
+funcdef					: "def" NAME parameters ":" suite										{D(fout_diag << "BISON:\tfuncdef : \"def\" NAME parameters \":\" suite\n");}
+						| "def" NAME parameters "->" test ":" suite								{D(fout_diag << "BISON:\tfuncdef : \"def\" NAME parameters \"->\" test \":\" suite\n");}
 						;
 global_stmt				: "global" NAME
 						| global_stmt "," NAME
@@ -437,47 +365,47 @@ nonlocal_stmt			: "nonlocal" NAME
 						| nonlocal_stmt "," NAME
 						;
 not_test				: "not" not_test
-						| comparison															{D(fout_diag << "YACC:\tnot_test : comparison\n");}
+						| comparison															{D(fout_diag << "BISON:\tnot_test : comparison\n");}
 						;
-or_test					: and_test																{D(fout_diag << "YACC:\tor_test : and_test\n");}
-						| or_test "or" and_test													{D(fout_diag << "YACC:\tor_test : or_test \"or\" and_test\n");}
+or_test					: and_test																{D(fout_diag << "BISON:\tor_test : and_test\n");}
+						| or_test "or" and_test													{D(fout_diag << "BISON:\tor_test : or_test \"or\" and_test\n");}
 						;
-parameters				: "(" ")"																{D(fout_diag << "YACC:\tparameters : \"(\" \")\"\n");}
-						| "(" typedargslist ")"													{D(fout_diag << "YACC:\tparameters : \"(\" typedargslist \")\"\n");}
+parameters				: "(" ")"																{D(fout_diag << "BISON:\tparameters : \"(\" \")\"\n");}
+						| "(" typedargslist ")"													{D(fout_diag << "BISON:\tparameters : \"(\" typedargslist \")\"\n");}
 						;
 pass_stmt				: "pass"
 						;
-power					: atom_expr																{D(fout_diag << "YACC:\tpower : atom_expr\n");}
+power					: atom_expr																{D(fout_diag << "BISON:\tpower : atom_expr\n");}
 						| atom_expr "**" factor
 						;
 raise_stmt				: "raise"
 						| "raise" test
 						| "raise" test "from" test
 						;
-return_stmt				: "return"																{D(fout_diag << "YACC:\treturn_stmt : \"return\"\n");}
-						| "return" testlist														{D(fout_diag << "YACC:\treturn_stmt : \"return\" testlist\n");}
+return_stmt				: "return"																{D(fout_diag << "BISON:\treturn_stmt : \"return\"\n");}
+						| "return" testlist														{D(fout_diag << "BISON:\treturn_stmt : \"return\" testlist\n");}
 						;
-shift_expr				: arith_expr															{D(fout_diag << "YACC:\tshift_expr : arith_expr\n");}
-						| shift_expr "<<" arith_expr											{D(fout_diag << "YACC:\tshift_expr : shift_expr \"<<\" arith_expr\n");}
-						| shift_expr ">>" arith_expr											{D(fout_diag << "YACC:\tshift_expr : shift_expr \">>\" arith_expr\n");}
+shift_expr				: arith_expr															{D(fout_diag << "BISON:\tshift_expr : arith_expr\n");}
+						| shift_expr "<<" arith_expr											{D(fout_diag << "BISON:\tshift_expr : shift_expr \"<<\" arith_expr\n");}
+						| shift_expr ">>" arith_expr											{D(fout_diag << "BISON:\tshift_expr : shift_expr \">>\" arith_expr\n");}
 						;
-simple_stmt				: small_stmt simple_stmt_sub NEWLINE									{D(fout_diag << "YACC:\tsimple_stmt : small_stmt simple_stmt_sub NEWLINE\n");}
+simple_stmt				: small_stmt simple_stmt_sub NEWLINE									{D(fout_diag << "BISON:\tsimple_stmt : small_stmt simple_stmt_sub NEWLINE\n");}
 						| small_stmt simple_stmt_sub ";" NEWLINE
 						;
-simple_stmt_sub			: %empty																{D(fout_diag << "YACC:\tsimple_stmt_sub : \n");}
+simple_stmt_sub			: %empty																{D(fout_diag << "BISON:\tsimple_stmt_sub : \n");}
 						| simple_stmt_sub ";" small_stmt
 						;
-single_input			: NEWLINE																{D(fout_diag << "YACC:\tsingle_input : NEWLINE\n");}
-						| simple_stmt															{D(fout_diag << "YACC:\tsingle_input : simple_stmt\n");}
-						| compound_stmt NEWLINE													{D(fout_diag << "YACC:\tsingle_input : compound_stmt NEWLINE\n");}
+single_input			: NEWLINE																{D(fout_diag << "BISON:\tsingle_input : NEWLINE\n");}
+						| simple_stmt															{D(fout_diag << "BISON:\tsingle_input : simple_stmt\n");}
+						| compound_stmt NEWLINE													{D(fout_diag << "BISON:\tsingle_input : compound_stmt NEWLINE\n");}
 						;
 sliceop					: ":"
 						| ":" test
 						;
-small_stmt				: expr_stmt																{D(fout_diag << "YACC:\tsmall_stmt : expr_stmt\n");}
+small_stmt				: expr_stmt																{D(fout_diag << "BISON:\tsmall_stmt : expr_stmt\n");}
 						| del_stmt
 						| pass_stmt
-						| flow_stmt																{D(fout_diag << "YACC:\tsmall_stmt : flow_stmt\n");}
+						| flow_stmt																{D(fout_diag << "BISON:\tsmall_stmt : flow_stmt\n");}
 						| import_stmt
 						| global_stmt
 						| nonlocal_stmt
@@ -485,8 +413,8 @@ small_stmt				: expr_stmt																{D(fout_diag << "YACC:\tsmall_stmt : ex
 						;
 star_expr				: "*" expr
 						;
-stmt					: simple_stmt															{D(fout_diag << "YACC:\tstmt : simple_stmt\n");}
-						| compound_stmt															{D(fout_diag << "YACC:\tstmt : compound_stmt\n");}
+stmt					: simple_stmt															{D(fout_diag << "BISON:\tstmt : simple_stmt\n");}
+						| compound_stmt															{D(fout_diag << "BISON:\tstmt : compound_stmt\n");}
 						;
 string_plus				: STRING
 						| STRING string_plus
@@ -507,24 +435,24 @@ subscriptlist			: subscriptlist_sub
 subscriptlist_sub		: subscript
 						| subscriptlist_sub "," subscript 
 						;
-suite					: simple_stmt															{D(fout_diag << "YACC:\tsuite : simple_stmt\n");}
-						| NEWLINE INDENT suite_sub DEDENT										{D(fout_diag << "YACC:\tsuite : NEWLINE INDENT suite_sub DEDENT\n");}
+suite					: simple_stmt															{D(fout_diag << "BISON:\tsuite : simple_stmt\n");}
+						| NEWLINE INDENT suite_sub DEDENT										{D(fout_diag << "BISON:\tsuite : NEWLINE INDENT suite_sub DEDENT\n");}
 						;
-suite_sub				: stmt																	{D(fout_diag << "YACC:\tsuite_sub : stmt\n");}
-						| suite_sub stmt														{D(fout_diag << "YACC:\tsuite_sub : suite_sub stmt\n");}
+suite_sub				: stmt																	{D(fout_diag << "BISON:\tsuite_sub : stmt\n");}
+						| suite_sub stmt														{D(fout_diag << "BISON:\tsuite_sub : suite_sub stmt\n");}
 						;
-term					: factor																{D(fout_diag << "YACC:\tterm : factor\n");}
-						| term "*" factor														{D(fout_diag << "YACC:\tterm : term \"*\" factor\n"); /*$$ = $1 * $3*/}
-						| term "@" factor														{D(fout_diag << "YACC:\tterm : term \"@\" factor\n");}
-						| term "/" factor														{D(fout_diag << "YACC:\tterm : term \"/\" factor\n"); /*$$ = $1 / $3*/}
-						| term "%" factor														{D(fout_diag << "YACC:\tterm : term \"%\" factor\n"); /*$$ = $1 % $3*/}
-						| term "//" factor														{D(fout_diag << "YACC:\tterm : term \"//\" factor\n"); /*$$ = int($1 / $3)*/}
+term					: factor																{D(fout_diag << "BISON:\tterm : factor\n");}
+						| term "*" factor														{D(fout_diag << "BISON:\tterm : term \"*\" factor\n"); /*$$ = $1 * $3*/}
+						| term "@" factor														{D(fout_diag << "BISON:\tterm : term \"@\" factor\n");}
+						| term "/" factor														{D(fout_diag << "BISON:\tterm : term \"/\" factor\n"); /*$$ = $1 / $3*/}
+						| term "%" factor														{D(fout_diag << "BISON:\tterm : term \"%\" factor\n"); /*$$ = $1 % $3*/}
+						| term "//" factor														{D(fout_diag << "BISON:\tterm : term \"//\" factor\n"); /*$$ = int($1 / $3)*/}
 						;
-test					: or_test																{D(fout_diag << "YACC:\ttest : or_test\n");}
+test					: or_test																{D(fout_diag << "BISON:\ttest : or_test\n");}
 						| or_test "if" or_test "else" test
-						| lambdef																{D(fout_diag << "YACC:\ttest : lambdef\n");}
+						| lambdef																{D(fout_diag << "BISON:\ttest : lambdef\n");}
 						;
-testlist				: testlist_sub														{D(fout_diag << "YACC:\ttestlist : test testlist_sub\n");}
+testlist				: testlist_sub														{D(fout_diag << "BISON:\ttestlist : test testlist_sub\n");}
 						| testlist_sub ","
 						;
 testlist_comp			: testlist_comp_sub_ts comp_for
@@ -542,7 +470,7 @@ testlist_star_expr		: test dictorsetmaker_lsub
 						| star_expr dictorsetmaker_lsub
 						| star_expr dictorsetmaker_lsub ","
 						;
-testlist_sub			: test																{D(fout_diag << "YACC:\ttestlist_sub : \n");}
+testlist_sub			: test																{D(fout_diag << "BISON:\ttestlist_sub : \n");}
 						| testlist_sub "," test
 						;
 test_nocond				: or_test
@@ -551,13 +479,13 @@ test_nocond				: or_test
 tfpdef					: NAME 
 						| NAME ":" test
 						;
-trailer					: "(" ")"																{D(fout_diag << "YACC:\ttrailer : \"(\" \")\"\n");}
-						| "(" arglist ")"														{D(fout_diag << "YACC:\ttrailer : \"(\" arglist \")\"\n"); /*$$ = $2*/}
-						| "[" subscriptlist "]"													{D(fout_diag << "YACC:\ttrailer : \"[\" subscriptlist \"]\"\n"); /*$$ = $2*/}
-						| "." NAME																{D(fout_diag << "YACC:\ttrailer : \".\" NAME\n");}
+trailer					: "(" ")"																{D(fout_diag << "BISON:\ttrailer : \"(\" \")\"\n");}
+						| "(" arglist ")"														{D(fout_diag << "BISON:\ttrailer : \"(\" arglist \")\"\n"); /*$$ = $2*/}
+						| "[" subscriptlist "]"													{D(fout_diag << "BISON:\ttrailer : \"[\" subscriptlist \"]\"\n"); /*$$ = $2*/}
+						| "." NAME																{D(fout_diag << "BISON:\ttrailer : \".\" NAME\n");}
 						;
-trailer_star			: %empty																{D(fout_diag << "YACC:\ttrailer_star : \n");}
-						| trailer_star trailer													{D(fout_diag << "YACC:\ttrailer_star : trailer_star trailer\n");}
+trailer_star			: %empty																{D(fout_diag << "BISON:\ttrailer_star : \n");}
+						| trailer_star trailer													{D(fout_diag << "BISON:\ttrailer_star : trailer_star trailer\n");}
 						;
 try_stmt				: "try" ":" suite try_stmt_sub
 						| "try" ":" suite try_stmt_sub "finally" ":" suite
@@ -631,8 +559,8 @@ with_stmt				: "with" with_stmt_sub ":" suite
 with_stmt_sub			: with_item
 						| with_stmt_sub "," with_item
 						;
-xor_expr				: and_expr																{D(fout_diag << "YACC:\txor_expr : and_expr\n");}
-						| xor_expr "^" and_expr													{D(fout_diag << "YACC:\txor_expr : xor_expr \"^\" and_expr\n");}
+xor_expr				: and_expr																{D(fout_diag << "BISON:\txor_expr : and_expr\n");}
+						| xor_expr "^" and_expr													{D(fout_diag << "BISON:\txor_expr : xor_expr \"^\" and_expr\n");}
 						;
 yield_arg				: "from" test
 						| testlist
@@ -666,19 +594,19 @@ void PrintTokens(TokenTable * T) {
 		fout_diag << T->t[i].lineno << "\t" << T->t[i].layer << "\t";
 		switch (T->t[i].type) {
 			case STRING:{
-				fout_diag << "STRING" << "\t" << T->t[i].value.S;
+				fout_diag << "STRING" << "\t" << T->t[i].Object.Value.String;
 				break;
 			}
 			case NUMBER:{
-				fout_diag << "NUMBER" << "\t" << T->t[i].value.D;
+				fout_diag << "NUMBER" << "\t" << T->t[i].Object.Value.Number;
 				break;
 			}
 			case CHAR:{
-				fout_diag << "CHAR" << "\t" << T->t[i].value.C;
+				fout_diag << "CHAR" << "\t" << T->t[i].Object.Value.Char;
 				break;
 			}
 			case NAME:{
-				fout_diag << "NAME" << "\t" << T->t[i].value.S;
+				fout_diag << "NAME" << "\t" << T->t[i].Object.Value.String;
 				break;
 			}
 			case INDENT:{
@@ -690,7 +618,7 @@ void PrintTokens(TokenTable * T) {
 				break;
 			}
 			default:{
-				fout_diag << T->t[i].value.S;
+				fout_diag << T->t[i].Object.Value.String;
 				break;
 			}
 		}
@@ -715,51 +643,54 @@ int ReadTokens(ifstream &f, TokenTable * T) {
 				char temp;
 				f.get(temp);
 				f.get(temp);
-				T->t[i].value.S = new char[1024];
-				f.getline(T->t[i].value.S, 1024);
+				T->t[i].Object.Value.String = new char[1024];
+				f.getline(T->t[i].Object.Value.String, 1024);
 				for (int j = 0; j < 1024; j++)
-					if (T->t[i].value.S[j] == '\0')
-						T->t[i].value.S[j - 1] = '\0';
+					if (T->t[i].Object.Value.String[j] == '\0')
+						T->t[i].Object.Value.String[j - 1] = '\0';
 				break;
 			}
 			case NUMBER:{
-				f >> T->t[i].value.D;
+				f >> T->t[i].Object.Value.Number;
 				break;
 			}
 			case CHAR:{
 				char temp;
 				f.get(temp);
 				f.get(temp);
-				f.get(T->t[i].value.C);
+				f.get(T->t[i].Object.Value.Char);
 				f.get(temp);
 				break;
 			}
 			case NAME:{
-				T->t[i].value.S = new char[1024];
-				f >> T->t[i].value.S;
+				T->t[i].Object.Value.String = new char[1024];
+				f >> T->t[i].Object.Value.String;
 				break;
 			}
 			case INDENT:{
 				layer++;
-				T->t[i].value.S = new char[1024];
-				f >> T->t[i].value.S;
+				T->t[i].Object.Value.String = new char[1024];
+				f >> T->t[i].Object.Value.String;
+				free(T->t[i].Object.Value.String);
 				break;
 			}
 			case DEDENT:{
 				T->t[i].layer = --layer;
-				T->t[i].value.S = new char[1024];
-				f >> T->t[i].value.S;
+				T->t[i].Object.Value.String = new char[1024];
+				f >> T->t[i].Object.Value.String;
+				free(T->t[i].Object.Value.String);
 				break;
 			}
 			case ENDMARKER:{
 				Break = 1;
-				T->t[i].value.S = new char[1024];
-				f >> T->t[i].value.S;
+				T->t[i].Object.Value.String = new char[1024];
+				f >> T->t[i].Object.Value.String;
+				free(T->t[i].Object.Value.String);
 				break;
 			}
 			default:{
-				T->t[i].value.S = new char[1024];
-				f >> T->t[i].value.S;
+				T->t[i].Object.Value.String = new char[1024];
+				f >> T->t[i].Object.Value.String;
 				break;
 			}
 		}
@@ -785,40 +716,40 @@ int yylex() {
 		return 0;
 	switch (T->t[i].type) {
 		case STRING:{
-			yylval.String = T->t[i].value.S;
-			D(fout_diag << "LEX:\tSTRING\t" << yylval.String << endl);
+			yylval.String = T->t[i].Object.Value.String;
+			D(fout_diag << "FLEX:\tSTRING\t" << yylval.String << endl);
 			break;
 		}
 		case NUMBER:{
-			yylval.Double = T->t[i].value.D;
-			D(fout_diag << "LEX:\tNUMBER\t" << yylval.Double << endl);
+			yylval.Number = T->t[i].Object.Value.Number;
+			D(fout_diag << "FLEX:\tNUMBER\t" << yylval.Number << endl);
 			break;
 		}
 		case CHAR:{
-			yylval.Char = T->t[i].value.C;
-			D(fout_diag << "LEX:\tCHAR\t" << yylval.Char << endl);
+			yylval.Char = T->t[i].Object.Value.Char;
+			D(fout_diag << "FLEX:\tCHAR\t" << yylval.Char << endl);
 			break;
 		}
 		case NAME:{
-			yylval.Name = T->t[i].value.S;
-			D(fout_diag << "LEX:\tNAME\t" << yylval.Name << endl);
+			yylval.Name = T->t[i].Object.Value.String;
+			D(fout_diag << "FLEX:\tNAME\t" << yylval.Name << endl);
 			break;
 		}
 		case INDENT:{
-			D(fout_diag << "LEX:\tINDENT" << endl);
+			D(fout_diag << "FLEX:\tINDENT" << endl);
 			break;
 		}
 		case DEDENT:{
-			D(fout_diag << "LEX:\tDEDENT" << endl);
+			D(fout_diag << "FLEX:\tDEDENT" << endl);
 			break;
 		}
 		case NEWLINE:{
-			D(fout_diag << "LEX:\tNEWLINE" << endl);
+			D(fout_diag << "FLEX:\tNEWLINE" << endl);
 			break;
 		}
 		default:{
-			yylval.Name = T->t[i].value.S;
-			D(fout_diag << "LEX:\t" << yylval.Name << endl);
+			yylval.Name = T->t[i].Object.Value.String;
+			D(fout_diag << "FLEX:\t" << yylval.Name << endl);
 			break;
 		}
 	}
