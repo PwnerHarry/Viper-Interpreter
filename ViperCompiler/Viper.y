@@ -114,8 +114,8 @@ union YYSTYPE{
 %%
 file_input				: file_input_sub ENDMARKER												{D(fout_diag << "BISON:\tfile_input : file_input_sub ENDMARKER\n");}
 						;
-and_expr				: shift_expr															{D(fout_diag << "BISON:\tand_expr : shift_expr\n");}
-						| and_expr "&" shift_expr												{D(fout_diag << "BISON:\tand_expr : and_expr \"&\" shift_expr\n");}
+and_expr				: shift_expr															{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tand_expr : shift_expr\n");}
+						| and_expr "&" shift_expr												{$<Number>$ = int($<Number>1) & int($<Number>3);D(fout_diag << "BISON:\tand_expr : and_expr \"&\" shift_expr\n");}
 						;
 and_test				: not_test																{D(fout_diag << "BISON:\tand_test : not_test\n");}
 						| and_test "and" not_test												{D(fout_diag << "BISON:\tand_test : and_test \"and\" not_test\n");}
@@ -386,8 +386,8 @@ return_stmt				: "return"																{D(fout_diag << "BISON:\treturn_stmt : 
 						| "return" testlist														{D(fout_diag << "BISON:\treturn_stmt : \"return\" testlist\n");}
 						;
 shift_expr				: arith_expr															{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tshift_expr : arith_expr\n");}
-						| shift_expr "<<" arith_expr											{D(fout_diag << "BISON:\tshift_expr : shift_expr \"<<\" arith_expr\n");}
-						| shift_expr ">>" arith_expr											{D(fout_diag << "BISON:\tshift_expr : shift_expr \">>\" arith_expr\n");}
+						| shift_expr "<<" arith_expr											{$<Number>$ = $<Number>1 * pow(2, $<Number>3); D(fout_diag << "BISON:\tshift_expr : shift_expr \"<<\" arith_expr\n");}
+						| shift_expr ">>" arith_expr											{$<Number>$ = $<Number>1 / pow(2, $<Number>3); D(fout_diag << "BISON:\tshift_expr : shift_expr \">>\" arith_expr\n");}
 						;
 simple_stmt				: small_stmt simple_stmt_sub NEWLINE									{D(fout_diag << "BISON:\tsimple_stmt : small_stmt simple_stmt_sub NEWLINE\n");}
 						| small_stmt simple_stmt_sub ";" NEWLINE
@@ -559,8 +559,8 @@ with_stmt				: "with" with_stmt_sub ":" suite
 with_stmt_sub			: with_item
 						| with_stmt_sub "," with_item
 						;
-xor_expr				: and_expr																{D(fout_diag << "BISON:\txor_expr : and_expr\n");}
-						| xor_expr "^" and_expr													{D(fout_diag << "BISON:\txor_expr : xor_expr \"^\" and_expr\n");}
+xor_expr				: and_expr																{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\txor_expr : and_expr\n");}
+						| xor_expr "^" and_expr													{$<Number>$ = int($<Number>1) ^ int($<Number>3); D(fout_diag << "BISON:\txor_expr : xor_expr \"^\" and_expr\n");}
 						;
 yield_arg				: "from" test
 						| testlist
