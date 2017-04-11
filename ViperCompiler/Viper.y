@@ -117,9 +117,23 @@ file_input				: file_input_sub ENDMARKER												{D(fout_diag << "BISON:\tfil
 and_expr				: shift_expr															{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tand_expr : shift_expr\n");}
 						| and_expr "&" shift_expr												{$<Number>$ = int($<Number>1) & int($<Number>3);D(fout_diag << "BISON:\tand_expr : and_expr \"&\" shift_expr\n");}
 						;
-and_test				: not_test																{D(fout_diag << "BISON:\tand_test : not_test\n");}
-						| and_test "and" not_test												{D(fout_diag << "BISON:\tand_test : and_test \"and\" not_test\n");}
-						;
+and_test:
+not_test {
+	$<Bool>$ = $<Bool>1;
+	D(fout_diag << "BISON:\tand_test : not_test\n");
+	if ($<Bool>$)
+		D(fout_diag << "SVAL:\t" << "true" << "\n");
+	else
+		D(fout_diag << "SVAL:\t" << "false" << "\n");
+}|
+and_test "and" not_test {
+	$<Bool>$ = $<Bool>1 && $<Bool>3;
+	D(fout_diag << "BISON:\tand_test : and_test \"and\" not_test\n");
+	if ($<Bool>$)
+		D(fout_diag << "SVAL:\t" << "true" << "\n");
+	else
+		D(fout_diag << "SVAL:\t" << "false" << "\n");
+};
 annassign				: ":" test
 						| ":" test "=" test
 						;
@@ -194,6 +208,10 @@ expr {
 	else
 		$<Bool>$ = false;
 	D(fout_diag << "BISON:\tcomparison : expr\n");
+	if ($<Bool>$)
+		D(fout_diag << "SVAL:\t" << "true" << "\n");
+	else
+		D(fout_diag << "SVAL:\t" << "false" << "\n");
 }|
 comparison comp_op expr {
 	switch (int($<Number>2)) {
@@ -255,7 +273,10 @@ comparison comp_op expr {
 		}
 	}
 	D(fout_diag << "BISON:\tcomparison : comparison comp_op expr\n");
-	D(fout_diag << "SVAL:\t" << $<Bool>$ <<"\n");
+	if ($<Bool>$)
+		D(fout_diag << "SVAL:\t" << "true" << "\n");
+	else
+		D(fout_diag << "SVAL:\t" << "false" << "\n");
 };
 
 compound_stmt			: if_stmt
@@ -466,12 +487,43 @@ lambdef_nocond			: "lambda"  ":" test_nocond
 nonlocal_stmt			: "nonlocal" NAME
 						| nonlocal_stmt "," NAME
 						;
-not_test				: "not" not_test
-						| comparison															{D(fout_diag << "BISON:\tnot_test : comparison\n");}
-						;
-or_test					: and_test																{D(fout_diag << "BISON:\tor_test : and_test\n");}
-						| or_test "or" and_test													{D(fout_diag << "BISON:\tor_test : or_test \"or\" and_test\n");}
-						;
+
+not_test:
+"not" not_test {
+	$<Bool>$ = !$<Bool>1;
+	D(fout_diag << "BISON:\tnot_test : \"not\" not_test\n");
+	if ($<Bool>$)
+		D(fout_diag << "SVAL:\t" << "true" << "\n");
+	else
+		D(fout_diag << "SVAL:\t" << "false" << "\n");
+}|
+comparison {
+	$<Bool>$ = $<Bool>1;
+	D(fout_diag << "BISON:\tnot_test : comparison\n");
+	if ($<Bool>$)
+		D(fout_diag << "SVAL:\t" << "true" << "\n");
+	else
+		D(fout_diag << "SVAL:\t" << "false" << "\n");
+};
+
+or_test:
+and_test{
+	$<Bool>$ = $<Bool>1;
+	D(fout_diag << "BISON:\tor_test : and_test\n");
+	if ($<Bool>$)
+		D(fout_diag << "SVAL:\t" << "true" << "\n");
+	else
+		D(fout_diag << "SVAL:\t" << "false" << "\n");
+}|
+or_test "or" and_test {
+	$<Bool>$ = $<Bool>1 || $<Bool>3;
+	D(fout_diag << "BISON:\tor_test : or_test \"or\" and_test\n");
+	if ($<Bool>$)
+		D(fout_diag << "SVAL:\t" << "true" << "\n");
+	else
+		D(fout_diag << "SVAL:\t" << "false" << "\n");
+};
+
 parameters				: "(" ")"																{D(fout_diag << "BISON:\tparameters : \"(\" \")\"\n");}
 						| "(" typedargslist ")"													{D(fout_diag << "BISON:\tparameters : \"(\" typedargslist \")\"\n");}
 						;
@@ -550,13 +602,33 @@ term					: factor																{$<Number>$ = $<Number>1; D(fout_diag << "BISON
 						| term "%" factor														{D(fout_diag << "BISON:\tterm : term \"%\" factor\n"); /*$$ = $1 % $3*/}
 						| term "//" factor														{$<Number>$ = floor($<Number>1 / $<Number>3);D(fout_diag << "BISON:\tterm : term \"//\" factor\n"); /*$$ = int($1 / $3)*/}
 						;
-test					: or_test																{D(fout_diag << "BISON:\ttest : or_test\n");}
-						| or_test "if" or_test "else" test
-						| lambdef																{D(fout_diag << "BISON:\ttest : lambdef\n");}
-						;
-testlist				: testlist_sub														{D(fout_diag << "BISON:\ttestlist : test testlist_sub\n");}
-						| testlist_sub ","
-						;
+test:
+or_test {
+	$<Bool>$ = $<Bool>1;
+	D(fout_diag << "BISON:\ttest : or_test\n");
+	if ($<Bool>$)
+		D(fout_diag << "SVAL:\t" << "true" << "\n");
+	else
+		D(fout_diag << "SVAL:\t" << "false" << "\n");
+}|
+or_test "if" or_test "else" test
+|
+lambdef {
+	D(fout_diag << "BISON:\ttest : lambdef\n");
+};
+
+testlist:
+testlist_sub {
+	$<Bool>$ = $<Bool>1;
+	D(fout_diag << "BISON:\ttestlist : test testlist_sub\n");
+	if ($<Bool>$)
+		D(fout_diag << "SVAL:\t" << "true" << "\n");
+	else
+		D(fout_diag << "SVAL:\t" << "false" << "\n");
+}|
+testlist_sub ","
+;
+
 testlist_comp			: testlist_comp_sub_ts comp_for
 						| testlist_comp_sub_ts testlist_comp_sub_co
 						| testlist_comp_sub_ts testlist_comp_sub_co ","
@@ -572,9 +644,18 @@ testlist_star_expr		: test dictorsetmaker_lsub
 						| star_expr dictorsetmaker_lsub
 						| star_expr dictorsetmaker_lsub ","
 						;
-testlist_sub			: test																{D(fout_diag << "BISON:\ttestlist_sub : \n");}
-						| testlist_sub "," test
-						;
+testlist_sub:
+test {
+	$<Bool>$ = $<Bool>1;
+	D(fout_diag << "BISON:\ttestlist_sub : \n");
+	if ($<Bool>$)
+		D(fout_diag << "SVAL:\t" << "true" << "\n");
+	else
+		D(fout_diag << "SVAL:\t" << "false" << "\n");
+}|
+testlist_sub "," test
+;
+
 test_nocond				: or_test
 						| lambdef_nocond
 						;
