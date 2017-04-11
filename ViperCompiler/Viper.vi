@@ -1,6 +1,5 @@
 #THIS IS MERELY FOR TESTING!!
 def Factorial(n):
-	'''This is a fucking docstring'''
 	if not isinstance(n, int):
 		print('Factorial is only for integers')
 		return None

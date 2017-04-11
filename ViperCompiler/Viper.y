@@ -15,7 +15,6 @@ union YYSTYPE{
 	bool Bool;
 };
 %}
-
 %define api.value.type		{union YYSTYPE}
 %token	<Number>			NUMBER
 %token	<String>			CHAR
@@ -112,11 +111,23 @@ union YYSTYPE{
 %right "**" /* exponentiation */
 
 %%
-file_input				: file_input_sub ENDMARKER												{D(fout_diag << "BISON:\tfile_input : file_input_sub ENDMARKER\n");}
-						;
-and_expr				: shift_expr															{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tand_expr : shift_expr\n");}
-						| and_expr "&" shift_expr												{$<Number>$ = int($<Number>1) & int($<Number>3);D(fout_diag << "BISON:\tand_expr : and_expr \"&\" shift_expr\n");}
-						;
+file_input:
+file_input_sub ENDMARKER {
+	D(fout_diag << "BISON:\tfile_input : file_input_sub ENDMARKER\n");
+};
+
+and_expr:
+shift_expr {
+	$<Number>$ = $<Number>1;
+	D(fout_diag << "BISON:\tand_expr : shift_expr\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+and_expr "&" shift_expr {
+	$<Number>$ = int($<Number>1) & int($<Number>3);
+	D(fout_diag << "BISON:\tand_expr : and_expr \"&\" shift_expr\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+};
+
 and_test:
 not_test {
 	$<Bool>$ = $<Bool>1;
@@ -149,10 +160,23 @@ argument				: test																	{D(fout_diag << "BISON:\targument : test\n");
 						| "**" test
 						| "*" test 
 						;
-arith_expr				: term																	{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tarith_expr : term\n");}
-						| arith_expr "+" term													{$<Number>$ = $<Number>1 + $<Number>3; D(fout_diag << "BISON:\tarith_expr : arith_expr \"+\" term\n");}
-						| arith_expr "-" term													{$<Number>$ = $<Number>1 - $<Number>3;D(fout_diag << "BISON:\tarith_expr : arith_expr \"-\" term\n");}
-						;
+arith_expr:
+term {
+	$<Number>$ = $<Number>1;
+	D(fout_diag << "BISON:\tarith_expr : term\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+arith_expr "+" term {
+	$<Number>$ = $<Number>1 + $<Number>3;
+	D(fout_diag << "BISON:\tarith_expr : arith_expr \"+\" term\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+arith_expr "-" term {
+	$<Number>$ = $<Number>1 - $<Number>3;
+	D(fout_diag << "BISON:\tarith_expr : arith_expr \"-\" term\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+};
+
 assert_stmt				: "assert" test
 						| "assert" test "," test
 						;
@@ -162,24 +186,54 @@ async_stmt				: ASYNC funcdef
 						| ASYNC with_stmt
 						| ASYNC for_stmt
 						;
-atom					: "..."
-						| "None"										
-						| "True"																{$<Bool>1 = true; $<Bool>$ = $<Bool>1;}
-						| "False"																{$<Bool>1 = false; $<Bool>$ = $<Bool>1;}
-						| NAME																	{$<Name>$ = $<Name>1;}
-						| NUMBER																{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tatom : NUMBER\n");}
-						| string_plus
-						| "(" ")"
-						| "(" yield_expr ")"
-						| "(" testlist_comp ")"
-						| "[" "]"
-						| "[" testlist_comp "]"
-						| "{" "}"
-						| "{" dictorsetmaker "}"
-						;
-atom_expr				: atom trailer_star														{if ($<Number>2 == 0) $<Number>$ = $<Number>1; D(fout_diag << "BISON:\tatom_expr : atom trailer_star\n");}
-						| AWAIT atom trailer_star
-						;
+atom:
+"..."
+|
+"None"										
+|
+"True" {
+	$<Bool>$ = true;
+	D(fout_diag << "SVAL:\t" << "true" << "\n");
+}|
+"False" {
+	$<Bool>$ = false;
+	D(fout_diag << "SVAL:\t" << "false" << "\n");
+}|
+NAME {
+	$<Name>$ = $<Name>1;
+	D(fout_diag << "SVAL:\t" << $<Name>$ << "\n");
+}|
+NUMBER {
+	$<Number>$ = $<Number>1;
+	D(fout_diag << "BISON:\tatom : NUMBER\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+string_plus
+|
+"(" ")"
+|
+"(" yield_expr ")"
+|
+"(" testlist_comp ")"
+|
+"[" "]"
+|
+"[" testlist_comp "]"
+|
+"{" "}"
+|
+"{" dictorsetmaker "}"
+;
+
+atom_expr:
+atom trailer_star {
+	if ($<Number>2 == 0) $<Number>$ = $<Number>1;
+	D(fout_diag << "BISON:\tatom_expr : atom trailer_star\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+AWAIT atom trailer_star
+;
+
 augassign				: "+="
 						| "-="
 						| "*="
@@ -194,12 +248,18 @@ augassign				: "+="
 						| "**="
 						| "//="
 						;
-break_stmt				: "break"
-						;
-classdef				: "class" NAME ":" suite												{D(fout_diag << "BISON:\tclassdef : \"class\" NAME : suite\n");}
-						| "class" NAME "(" ")" ":" suite
-						| "class" NAME "(" arglist ")" ":" suite
-						;
+break_stmt:
+"break"
+;
+
+classdef:
+"class" NAME ":" suite {
+	D(fout_diag << "BISON:\tclassdef : \"class\" NAME : suite\n");
+}|
+"class" NAME "(" ")" ":" suite
+|
+"class" NAME "(" arglist ")" ":" suite
+;
 
 comparison:
 expr {
@@ -418,9 +478,18 @@ exprlist_es				: expr
 exprlist_sub			: %empty
 						| exprlist_sub "," exprlist_es
 						;
-expr					: xor_expr																{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\texpr : xor_expr\n");}
-						| expr "|" xor_expr														{$<Number>$ = int($<Number>1) | int($<Number>3); D(fout_diag << "BISON:\texpr : expr \"|\" xor_expr\n");}
-						;
+expr:
+xor_expr {
+	$<Number>$ = $<Number>1;
+	D(fout_diag << "BISON:\texpr : xor_expr\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+expr "|" xor_expr {
+	$<Number>$ = int($<Number>1) | int($<Number>3);
+	D(fout_diag << "BISON:\texpr : expr \"|\" xor_expr\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+};
+
 expr_stmt				: testlist_star_expr annassign
 						| testlist_star_expr augassign yield_expr
 						| testlist_star_expr augassign testlist
@@ -455,14 +524,19 @@ global_stmt				: "global" NAME
 						| global_stmt "," NAME
 						;
 if_stmt:
-"if" test ":" suite if_stmt_sub
-|
+"if" test ":" suite if_stmt_sub {
+	if (!$<Number>5){
+		
+	}
+	
+}|
 "if" test ":" suite if_stmt_sub "else" ":" suite
 ;
 
 if_stmt_sub:
-%empty
-|
+%empty {
+	$<Number>$ = 0;
+}|
 if_stmt_sub "elif" test ":" suite
 ;
 
@@ -546,10 +620,24 @@ raise_stmt				: "raise"
 return_stmt				: "return"																{D(fout_diag << "BISON:\treturn_stmt : \"return\"\n");}
 						| "return" testlist														{D(fout_diag << "BISON:\treturn_stmt : \"return\" testlist\n");}
 						;
-shift_expr				: arith_expr															{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tshift_expr : arith_expr\n");}
-						| shift_expr "<<" arith_expr											{$<Number>$ = $<Number>1 * pow(2, $<Number>3); D(fout_diag << "BISON:\tshift_expr : shift_expr \"<<\" arith_expr\n");}
-						| shift_expr ">>" arith_expr											{$<Number>$ = $<Number>1 / pow(2, $<Number>3); D(fout_diag << "BISON:\tshift_expr : shift_expr \">>\" arith_expr\n");}
-						;
+
+shift_expr:
+arith_expr {
+	$<Number>$ = $<Number>1;
+	D(fout_diag << "BISON:\tshift_expr : arith_expr\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+shift_expr "<<" arith_expr {
+	$<Number>$ = $<Number>1 * pow(2, int($<Number>3));
+	D(fout_diag << "BISON:\tshift_expr : shift_expr \"<<\" arith_expr\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+shift_expr ">>" arith_expr {
+	$<Number>$ = $<Number>1 / pow(2, int($<Number>3));
+	D(fout_diag << "BISON:\tshift_expr : shift_expr \">>\" arith_expr\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+};
+
 simple_stmt				: small_stmt simple_stmt_sub NEWLINE									{D(fout_diag << "BISON:\tsimple_stmt : small_stmt simple_stmt_sub NEWLINE\n");}
 						| small_stmt simple_stmt_sub ";" NEWLINE
 						;
@@ -572,14 +660,24 @@ small_stmt				: expr_stmt																{D(fout_diag << "BISON:\tsmall_stmt : e
 						| nonlocal_stmt
 						| assert_stmt
 						;
-star_expr				: "*" expr
-						;
-stmt					: simple_stmt															{D(fout_diag << "BISON:\tstmt : simple_stmt\n");}
-						| compound_stmt															{D(fout_diag << "BISON:\tstmt : compound_stmt\n");}
-						;
-string_plus				: STRING
-						| STRING string_plus
-						;
+star_expr:
+"*" expr
+;
+
+stmt:
+simple_stmt {
+	D(fout_diag << "BISON:\tstmt : simple_stmt\n");
+}|
+compound_stmt {
+	D(fout_diag << "BISON:\tstmt : compound_stmt\n");
+};
+
+string_plus:
+STRING
+|
+STRING string_plus
+;
+
 subscript				: test
 						| ":"
 						| ":" sliceop
@@ -596,19 +694,52 @@ subscriptlist			: subscriptlist_sub
 subscriptlist_sub		: subscript
 						| subscriptlist_sub "," subscript 
 						;
-suite					: simple_stmt															{D(fout_diag << "BISON:\tsuite : simple_stmt\n");}
-						| NEWLINE INDENT suite_sub DEDENT										{D(fout_diag << "BISON:\tsuite : NEWLINE INDENT suite_sub DEDENT\n");}
-						;
-suite_sub				: stmt																	{D(fout_diag << "BISON:\tsuite_sub : stmt\n");}
-						| suite_sub stmt														{D(fout_diag << "BISON:\tsuite_sub : suite_sub stmt\n");}
-						;
-term					: factor																{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tterm : factor\n");}
-						| term "*" factor														{$<Number>$ = $<Number>1 * $<Number>3; D(fout_diag << "BISON:\tterm : term \"*\" factor\n"); /*$$ = $1 * $3*/}
-						| term "@" factor														{D(fout_diag << "BISON:\tterm : term \"@\" factor\n");}
-						| term "/" factor														{$<Number>$ = $<Number>1 / $<Number>3;D(fout_diag << "BISON:\tterm : term \"/\" factor\n"); /*$$ = $1 / $3*/}
-						| term "%" factor														{D(fout_diag << "BISON:\tterm : term \"%\" factor\n"); /*$$ = $1 % $3*/}
-						| term "//" factor														{$<Number>$ = floor($<Number>1 / $<Number>3);D(fout_diag << "BISON:\tterm : term \"//\" factor\n"); /*$$ = int($1 / $3)*/}
-						;
+suite:
+simple_stmt {
+	D(fout_diag << "BISON:\tsuite : simple_stmt\n");
+}|
+NEWLINE INDENT suite_sub DEDENT {
+	D(fout_diag << "BISON:\tsuite : NEWLINE INDENT suite_sub DEDENT\n");
+};
+
+suite_sub:
+stmt {
+	D(fout_diag << "BISON:\tsuite_sub : stmt\n");
+}|
+suite_sub stmt {
+	D(fout_diag << "BISON:\tsuite_sub : suite_sub stmt\n");
+};
+
+term:
+factor {
+	$<Number>$ = $<Number>1;
+	D(fout_diag << "BISON:\tterm : factor\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+term "*" factor {
+	$<Number>$ = $<Number>1 * $<Number>3;
+	D(fout_diag << "BISON:\tterm : term \"*\" factor\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+term "@" factor {
+	$<Number>$ = int($<Number>1) % int($<Number>3);
+	D(fout_diag << "BISON:\tterm : term \"@\" factor\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+term "/" factor {
+	$<Number>$ = $<Number>1 / $<Number>3;
+	D(fout_diag << "BISON:\tterm : term \"/\" factor\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+term "%" factor {
+	D(fout_diag << "BISON:\tterm : term \"%\" factor\n");
+}|
+term "//" factor {
+	$<Number>$ = floor($<Number>1 / $<Number>3);
+	D(fout_diag << "BISON:\tterm : term \"//\" factor\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+};
+
 test:
 or_test {
 	$<Bool>$ = $<Bool>1;
@@ -749,9 +880,19 @@ with_stmt				: "with" with_stmt_sub ":" suite
 with_stmt_sub			: with_item
 						| with_stmt_sub "," with_item
 						;
-xor_expr				: and_expr																{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\txor_expr : and_expr\n");}
-						| xor_expr "^" and_expr													{$<Number>$ = int($<Number>1) ^ int($<Number>3); D(fout_diag << "BISON:\txor_expr : xor_expr \"^\" and_expr\n");}
-						;
+
+xor_expr:
+and_expr {
+	$<Number>$ = $<Number>1;
+	D(fout_diag << "BISON:\txor_expr : and_expr\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+}|
+xor_expr "^" and_expr {
+	$<Number>$ = int($<Number>1) ^ int($<Number>3);
+	D(fout_diag << "BISON:\txor_expr : xor_expr \"^\" and_expr\n");
+	D(fout_diag << "SVAL:\t" << $<Number>$ << "\n");
+};
+
 yield_arg				: "from" test
 						| testlist
 						;
@@ -805,6 +946,10 @@ void PrintTokens(TokenTable * T) {
 			}
 			case DEDENT:{
 				fout_diag << "DEDENT";
+				break;
+			}
+			case ENDMARKER:{
+				fout_diag << "ENDMARKER";
 				break;
 			}
 			default:{
@@ -935,6 +1080,10 @@ int yylex() {
 		}
 		case NEWLINE:{
 			D(fout_diag << "FLEX:\tNEWLINE" << endl);
+			break;
+		}
+		case ENDMARKER:{
+			D(fout_diag << "FLEX:\tENDMARKER" << endl);
 			break;
 		}
 		default:{
