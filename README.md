@@ -15,4 +15,8 @@ The features that are not so hurry to realize yet we wish to bring them on somed
 	Code Optimization
 	Cross compiling
 	GUI
-	
+How to run this:
+
+	Turn on your windows
+	Make sure that your g++ is in a directory the system environment variables as "Path"
+	run ./ViperCompiler/test.bat which compiles the test.vi
