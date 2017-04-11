@@ -375,7 +375,7 @@ parameters				: "(" ")"																{D(fout_diag << "BISON:\tparameters : \"(
 						;
 pass_stmt				: "pass"
 						;
-power					: atom_expr																{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tpower : atom_expr\n");}
+power					: atom_expr																{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tpower : atom_expr\nSVAL:\t" << $<Number>$ << "\n");}
 						| atom_expr "**" factor
 						;
 raise_stmt				: "raise"
