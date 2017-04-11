@@ -186,9 +186,78 @@ classdef				: "class" NAME ":" suite												{D(fout_diag << "BISON:\tclassde
 						| "class" NAME "(" ")" ":" suite
 						| "class" NAME "(" arglist ")" ":" suite
 						;
-comparison				: expr																	{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tcomparison : expr\n");}
-						| comparison comp_op expr												{/*switch*/D(fout_diag << "BISON:\tcomparison : comparison comp_op expr\n");}
-						;
+
+comparison:
+expr {
+	if($<Number>1)
+		$<Bool>$ = true;
+	else
+		$<Bool>$ = false;
+	D(fout_diag << "BISON:\tcomparison : expr\n");
+}|
+comparison comp_op expr {
+	switch (int($<Number>2)) {
+		case LESS: {
+			if ($<Number>1 < $<Number>3)
+				$<Bool>$ = true;
+			else
+				$<Bool>$ = false;
+			break;
+		}
+		case GREATER: {
+			if ($<Number>1 > $<Number>3)
+				$<Bool>$ = true;
+			else
+				$<Bool>$ = false;
+			break;
+		}
+		case EQEQUAL: {
+			if ($<Number>1 == $<Number>3)
+				$<Bool>$ = true;
+			else
+				$<Bool>$ = false;
+			break;
+		}
+		case GREATEREQUAL: {
+			if ($<Number>1 >= $<Number>3)
+				$<Bool>$ = true;
+			else
+				$<Bool>$ = false;
+			break;
+		}
+		case LESSEQUAL: {
+			if ($<Number>1 <= $<Number>3)
+				$<Bool>$ = true;
+			else
+				$<Bool>$ = false;
+			break;
+		}
+		case NOTEQUAL: {
+			if ($<Number>1 != $<Number>3)
+				$<Bool>$ = true;
+			else
+				$<Bool>$ = false;
+			break;
+		}
+		case IN: {
+			/*$1 is within $3*/
+			break;
+		}
+		case IS: {
+			if (&$<Number>1 == &$<Number>3)
+				$<Bool>$ = true;
+			else
+				$<Bool>$ = false;
+			break;
+		}
+		default: {
+			break;
+		}
+	}
+	D(fout_diag << "BISON:\tcomparison : comparison comp_op expr\n");
+	D(fout_diag << "SVAL:\t" << $<Bool>$ <<"\n");
+};
+
 compound_stmt			: if_stmt
 						| while_stmt
 						| for_stmt
@@ -210,18 +279,51 @@ comp_if					: "if" test_nocond
 comp_iter				: comp_for
 						| comp_if
 						;
-comp_op					: "<"																	{D(fout_diag << "BISON:\tcomp_op : \"<\"\n");}
-						| ">" 																	{D(fout_diag << "BISON:\tcomp_op : \">\"\n");}
-						| "==" 																	{D(fout_diag << "BISON:\tcomp_op : \"==\"\n");}
-						| ">="																	{D(fout_diag << "BISON:\tcomp_op : \">=\"\n");}
-						| "<="																	{D(fout_diag << "BISON:\tcomp_op : \"<=\"\n");}
-						| "<>"																	{D(fout_diag << "BISON:\tcomp_op : \"<>\"\n");}
-						| "!="																	{D(fout_diag << "BISON:\tcomp_op : \"!=\"\n");}
-						| "in"																	{D(fout_diag << "BISON:\tcomp_op : \"in\"\n");}
-						| "not" "in"															{D(fout_diag << "BISON:\tcomp_op : \"not\" \"in\"\n");}
-						| "is"																	{D(fout_diag << "BISON:\tcomp_op : \"is\"\n");}
-						| "is" "not"															{D(fout_diag << "BISON:\tcomp_op : \"is\" \"not\"\n");}
-						;
+comp_op:
+"<" {
+	$<Number>$ = LESS;
+	D(fout_diag << "BISON:\tcomp_op : \"<\"\n");
+}|
+">" {
+	$<Number>$ = GREATER;
+	D(fout_diag << "BISON:\tcomp_op : \">\"\n");
+}|
+"==" {
+	$<Number>$ = EQEQUAL;
+	D(fout_diag << "BISON:\tcomp_op : \"==\"\n");
+}|
+">=" {
+	$<Number>$ = GREATEREQUAL;
+	D(fout_diag << "BISON:\tcomp_op : \">=\"\n");
+}|
+"<=" {
+	$<Number>$ = LESSEQUAL;
+	D(fout_diag << "BISON:\tcomp_op : \"<=\"\n");
+}|
+"<>" {
+	$<Number>$ = NOTEQUAL;
+	D(fout_diag << "BISON:\tcomp_op : \"<>\"\n");
+}|
+"!=" {
+	$<Number>$ = NOTEQUAL;
+	D(fout_diag << "BISON:\tcomp_op : \"!=\"\n");
+}|
+"in" {
+	$<Number>$ = IN;
+	D(fout_diag << "BISON:\tcomp_op : \"in\"\n");
+}|
+"not" "in" {
+	$<Number>$ = -1;
+	D(fout_diag << "BISON:\tcomp_op : \"not\" \"in\"\n");
+}|
+"is" {
+	$<Number>$ = IS;
+	D(fout_diag << "BISON:\tcomp_op : \"is\"\n");
+}|
+"is" "not" {
+	$<Number>$ = -2;
+	D(fout_diag << "BISON:\tcomp_op : \"is\" \"not\"\n");
+};
 continue_stmt			: "continue"
 						;
 decorated				: decorators classdef
