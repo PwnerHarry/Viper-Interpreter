@@ -186,8 +186,8 @@ classdef				: "class" NAME ":" suite												{D(fout_diag << "BISON:\tclassde
 						| "class" NAME "(" ")" ":" suite
 						| "class" NAME "(" arglist ")" ":" suite
 						;
-comparison				: expr																	{D(fout_diag << "BISON:\tcomparison : expr\n");}
-						| comparison comp_op expr												{D(fout_diag << "BISON:\tcomparison : comparison comp_op expr\n");}
+comparison				: expr																	{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tcomparison : expr\n");}
+						| comparison comp_op expr												{/*switch*/D(fout_diag << "BISON:\tcomparison : comparison comp_op expr\n");}
 						;
 compound_stmt			: if_stmt
 						| while_stmt
@@ -294,8 +294,8 @@ exprlist_es				: expr
 exprlist_sub			: %empty
 						| exprlist_sub "," exprlist_es
 						;
-expr					: xor_expr																{D(fout_diag << "BISON:\texpr : xor_expr\n");}
-						| expr "|" xor_expr														{D(fout_diag << "BISON:\texpr : expr \"|\" xor_expr\n");}
+expr					: xor_expr																{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\texpr : xor_expr\n");}
+						| expr "|" xor_expr														{$<Number>$ = int($<Number>1) | int($<Number>3); D(fout_diag << "BISON:\texpr : expr \"|\" xor_expr\n");}
 						;
 expr_stmt				: testlist_star_expr annassign
 						| testlist_star_expr augassign yield_expr
