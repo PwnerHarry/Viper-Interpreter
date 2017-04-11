@@ -135,9 +135,9 @@ argument				: test																	{D(fout_diag << "BISON:\targument : test\n");
 						| "**" test
 						| "*" test 
 						;
-arith_expr				: term																	{D(fout_diag << "BISON:\tarith_expr : term\n");}
-						| arith_expr "+" term													{D(fout_diag << "BISON:\tarith_expr : arith_expr \"+\" term\n");}
-						| arith_expr "-" term													{D(fout_diag << "BISON:\tarith_expr : arith_expr \"-\" term\n");}
+arith_expr				: term																	{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tarith_expr : term\n");}
+						| arith_expr "+" term													{$<Number>$ = $<Number>1 + $<Number>3; D(fout_diag << "BISON:\tarith_expr : arith_expr \"+\" term\n");}
+						| arith_expr "-" term													{$<Number>$ = $<Number>1 - $<Number>3;D(fout_diag << "BISON:\tarith_expr : arith_expr \"-\" term\n");}
 						;
 assert_stmt				: "assert" test
 						| "assert" test "," test
@@ -307,8 +307,8 @@ expr_stmt_sub_sub		: %empty
 						| expr_stmt_sub_sub "=" testlist_star_expr
 						;
 factor					: power																	{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tfactor : power\n");}
-						| "+" factor															{D(fout_diag << "BISON:\tfactor : \"+\" factor\n");}
-						| "-" factor															{D(fout_diag << "BISON:\tfactor : \"-\" factor\n");}
+						| "+" factor															{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tfactor : \"+\" factor\n");}
+						| "-" factor															{$<Number>$ = -1.0 * $<Number>1; D(fout_diag << "BISON:\tfactor : \"-\" factor\n");}
 						| "~" factor															{D(fout_diag << "BISON:\tfactor : \"~\" factor\n");}
 						;
 file_input_sub			: %empty																{D(fout_diag << "BISON:\tfile_input_sub : \n");}
@@ -385,7 +385,7 @@ raise_stmt				: "raise"
 return_stmt				: "return"																{D(fout_diag << "BISON:\treturn_stmt : \"return\"\n");}
 						| "return" testlist														{D(fout_diag << "BISON:\treturn_stmt : \"return\" testlist\n");}
 						;
-shift_expr				: arith_expr															{D(fout_diag << "BISON:\tshift_expr : arith_expr\n");}
+shift_expr				: arith_expr															{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tshift_expr : arith_expr\n");}
 						| shift_expr "<<" arith_expr											{D(fout_diag << "BISON:\tshift_expr : shift_expr \"<<\" arith_expr\n");}
 						| shift_expr ">>" arith_expr											{D(fout_diag << "BISON:\tshift_expr : shift_expr \">>\" arith_expr\n");}
 						;
@@ -441,12 +441,12 @@ suite					: simple_stmt															{D(fout_diag << "BISON:\tsuite : simple_st
 suite_sub				: stmt																	{D(fout_diag << "BISON:\tsuite_sub : stmt\n");}
 						| suite_sub stmt														{D(fout_diag << "BISON:\tsuite_sub : suite_sub stmt\n");}
 						;
-term					: factor																{D(fout_diag << "BISON:\tterm : factor\n");}
-						| term "*" factor														{D(fout_diag << "BISON:\tterm : term \"*\" factor\n"); /*$$ = $1 * $3*/}
+term					: factor																{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tterm : factor\n");}
+						| term "*" factor														{$<Number>$ = $<Number>1 * $<Number>3; D(fout_diag << "BISON:\tterm : term \"*\" factor\n"); /*$$ = $1 * $3*/}
 						| term "@" factor														{D(fout_diag << "BISON:\tterm : term \"@\" factor\n");}
-						| term "/" factor														{D(fout_diag << "BISON:\tterm : term \"/\" factor\n"); /*$$ = $1 / $3*/}
+						| term "/" factor														{$<Number>$ = $<Number>1 / $<Number>3;D(fout_diag << "BISON:\tterm : term \"/\" factor\n"); /*$$ = $1 / $3*/}
 						| term "%" factor														{D(fout_diag << "BISON:\tterm : term \"%\" factor\n"); /*$$ = $1 % $3*/}
-						| term "//" factor														{D(fout_diag << "BISON:\tterm : term \"//\" factor\n"); /*$$ = int($1 / $3)*/}
+						| term "//" factor														{$<Number>$ = floor($<Number>1 / $<Number>3);D(fout_diag << "BISON:\tterm : term \"//\" factor\n"); /*$$ = int($1 / $3)*/}
 						;
 test					: or_test																{D(fout_diag << "BISON:\ttest : or_test\n");}
 						| or_test "if" or_test "else" test
