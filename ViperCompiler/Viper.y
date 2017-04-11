@@ -163,7 +163,7 @@ atom					: "..."
 						| "{" "}"
 						| "{" dictorsetmaker "}"
 						;
-atom_expr				: atom trailer_star														{D(fout_diag << "BISON:\tatom_expr : atom trailer_star\n");}
+atom_expr				: atom trailer_star														{if ($<Number>2 == 0) $<Number>$ = $<Number>1; D(fout_diag << "BISON:\tatom_expr : atom trailer_star\n");}
 						| AWAIT atom trailer_star
 						;
 augassign				: "+="
@@ -375,7 +375,7 @@ parameters				: "(" ")"																{D(fout_diag << "BISON:\tparameters : \"(
 						;
 pass_stmt				: "pass"
 						;
-power					: atom_expr																{D(fout_diag << "BISON:\tpower : atom_expr\n");}
+power					: atom_expr																{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tpower : atom_expr\n");}
 						| atom_expr "**" factor
 						;
 raise_stmt				: "raise"
@@ -484,7 +484,7 @@ trailer					: "(" ")"																{D(fout_diag << "BISON:\ttrailer : \"(\" \"
 						| "[" subscriptlist "]"													{D(fout_diag << "BISON:\ttrailer : \"[\" subscriptlist \"]\"\n"); /*$$ = $2*/}
 						| "." NAME																{D(fout_diag << "BISON:\ttrailer : \".\" NAME\n");}
 						;
-trailer_star			: %empty																{D(fout_diag << "BISON:\ttrailer_star : \n");}
+trailer_star			: %empty																{$<Number>$ = 0; D(fout_diag << "BISON:\ttrailer_star : \n");}
 						| trailer_star trailer													{D(fout_diag << "BISON:\ttrailer_star : trailer_star trailer\n");}
 						;
 try_stmt				: "try" ":" suite try_stmt_sub
