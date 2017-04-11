@@ -306,7 +306,7 @@ expr_stmt_sub_sub		: %empty
 						| expr_stmt_sub_sub "=" yield_expr
 						| expr_stmt_sub_sub "=" testlist_star_expr
 						;
-factor					: power																	{D(fout_diag << "BISON:\tfactor : power\n");}
+factor					: power																	{$<Number>$ = $<Number>1; D(fout_diag << "BISON:\tfactor : power\n");}
 						| "+" factor															{D(fout_diag << "BISON:\tfactor : \"+\" factor\n");}
 						| "-" factor															{D(fout_diag << "BISON:\tfactor : \"-\" factor\n");}
 						| "~" factor															{D(fout_diag << "BISON:\tfactor : \"~\" factor\n");}
