@@ -345,6 +345,7 @@ comp_op:
 	$<Number>$ = -2;
 	D(fout_diag << "BISON:\tcomp_op : \"is\" \"not\"\n");
 };
+
 continue_stmt			: "continue"
 						;
 decorated				: decorators classdef
@@ -453,12 +454,18 @@ funcdef					: "def" NAME parameters ":" suite										{D(fout_diag << "BISON:\t
 global_stmt				: "global" NAME
 						| global_stmt "," NAME
 						;
-if_stmt					: "if" test ":" suite if_stmt_sub
-						| "if" test ":" suite if_stmt_sub "else" ":" suite
-						;
-if_stmt_sub				: %empty
-						| if_stmt_sub "elif" test ":" suite
-						;
+if_stmt:
+"if" test ":" suite if_stmt_sub
+|
+"if" test ":" suite if_stmt_sub "else" ":" suite
+;
+
+if_stmt_sub:
+%empty
+|
+if_stmt_sub "elif" test ":" suite
+;
+
 import_as_name			: NAME
 						| NAME "as" NAME
 						;
