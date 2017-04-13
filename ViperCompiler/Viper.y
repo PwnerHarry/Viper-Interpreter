@@ -24,8 +24,6 @@ union YYSTYPE{
 %token	DEDENT
 %token	ENDMARKER
 %token	UNKNOWN
-%token	ASYNC				"async"
-%token	AWAIT				"await"
 %token	ELLIPSIS			"..."
 %token	LBRACE				"}"
 %token	RBRACE				"{"
@@ -38,16 +36,9 @@ union YYSTYPE{
 %token	EXEC				"exec"
 %token	WITH				"with"
 %token	RAISE				"raise"
-%token	TRY					"try"
 %token	DEL					"del"
 %token	AS					"as"
-%token	ASSERT				"assert"
 %token	IS					"is"
-%token	EXCEPT				"except"
-%token	FINALLY				"finally"
-%token	LAMBDA				"lambda"
-%token	YIELD				"yield"
-%token	IMPORT				"import"
 %token	WHILE				"while"
 %token	BREAK				"break"
 %token	CONTINUE			"continue"
@@ -94,7 +85,6 @@ union YYSTYPE{
 %token	DOUBLESLASHEQUAL	"//="
 %token	PERCENTEQUAL		"%="
 %token	DOUBLESTAREQUAL		"**="
-%token	NONLOCAL			"nonlocal"
 %token	VBAR				"|"
 %token	AMPER				"&"
 %token	CIRCUMFLEX			"^"
@@ -184,13 +174,6 @@ arith_expr "-" term {
 	fout_diag << "SVAL:\t" << $<Number>$ << "\n";
 };
 
-assert_stmt				: "assert" test
-						| "assert" test "," test
-						;
-async_funcdef			: ASYNC funcdef ;
-
-async_stmt				: ASYNC funcdef | ASYNC with_stmt | ASYNC for_stmt ;
-
 atom:
 "..."
 |
@@ -217,8 +200,6 @@ string_plus
 |
 "(" ")"
 |
-"(" yield_expr ")"
-|
 "(" testlist_comp ")"
 |
 "[" "]"
@@ -235,9 +216,7 @@ atom trailer_star {
 	if ($<Number>2 == 0) $<Number>$ = $<Number>1;
 	fout_diag << "BISON:\tatom_expr : atom trailer_star\n";
 	fout_diag << "SVAL:\t" << $<Number>$ << "\n";
-}|
-AWAIT atom trailer_star
-;
+};
 
 augassign				: "+="
 						| "-="
@@ -348,18 +327,14 @@ comparison comp_op expr {
 compound_stmt			: if_stmt
 						| while_stmt
 						| for_stmt
-						| try_stmt
 						| with_stmt
 						| funcdef																{fout_diag << "BISON:\tcompound_stmt : funcdef\n";}
 						| classdef
 						| decorated
-						| async_stmt
 						;
 
 comp_for				: "for" exprlist "in" or_test
 						| "for" exprlist "in" or_test comp_iter
-						| ASYNC "for" exprlist "in" or_test
-						| ASYNC "for" exprlist "in" or_test comp_iter
 						;
 
 comp_if					: "if" test_nocond
@@ -421,7 +396,6 @@ continue_stmt			: "continue"
 
 decorated				: decorators classdef
 						| decorators funcdef
-						| decorators async_funcdef
 						;
 
 decorator				: "@" dotted_name NEWLINE
@@ -482,18 +456,6 @@ dot_plus				: "."
 						| dot_plus "..."
 						;
 
-eval_input				: testlist eval_input_sub ENDMARKER
-						;
-
-eval_input_sub			: %empty
-						| eval_input_sub NEWLINE
-						;
-
-except_clause			: "except"
-						| "except" test
-						| "except" test "as" NAME
-						;
-
 exprlist				: exprlist_es exprlist_sub
 						| exprlist_es exprlist_sub ","
 						;
@@ -519,12 +481,10 @@ expr "|" xor_expr {
 };
 
 expr_stmt				: testlist_star_expr annassign
-						| testlist_star_expr augassign yield_expr
 						| testlist_star_expr augassign testlist
 						| testlist_star_expr expr_stmt_sub_sub
 						;
 expr_stmt_sub_sub		: %empty
-						| expr_stmt_sub_sub "=" yield_expr
 						| expr_stmt_sub_sub "=" testlist_star_expr
 						;
 factor:
@@ -552,7 +512,6 @@ flow_stmt				: break_stmt
 						| continue_stmt
 						| return_stmt															{fout_diag << "BISON:\tflow_stmt : return_stmt\n";}
 						| raise_stmt
-						| yield_stmt
 						;
 for_stmt				: "for" exprlist "in" testlist ":" suite
 						| "for" exprlist "in" testlist ":" suite "else" ":" suite
@@ -579,35 +538,6 @@ if_stmt_sub:
 }|
 if_stmt_sub "elif" test ":" suite
 ;
-
-import_as_name			: NAME
-						| NAME "as" NAME
-						;
-import_as_names			: import_as_name
-						| import_as_name ","
-						| import_as_name "," import_as_names
-						;
-import_from				: "from" dot_plus dotted_name "import" import_sub
-						| "from" dot_plus "import" import_sub
-						;
-import_name				: "import" dotted_as_names
-						;
-import_stmt				: import_name
-						| import_from
-						;
-import_sub				: "*"
-						| "(" import_as_names ")"
-						| import_as_names
-						;
-lambdef					: "lambda" varargslist ":" test
-						| "lambda" ":" test
-						;
-lambdef_nocond			: "lambda"  ":" test_nocond
-						| "lambda" varargslist ":" test_nocond
-						;
-nonlocal_stmt			: "nonlocal" NAME
-						| nonlocal_stmt "," NAME
-						;
 
 not_test:
 "not" not_test {
@@ -700,17 +630,6 @@ simple_stmt_sub:
 simple_stmt_sub ";" small_stmt
 ;
 
-single_input:
-NEWLINE {
-	fout_diag << "BISON:\tsingle_input : NEWLINE\n";
-}|
-simple_stmt {
-	fout_diag << "BISON:\tsingle_input : simple_stmt\n";
-}|
-compound_stmt NEWLINE {
-	fout_diag << "BISON:\tsingle_input : compound_stmt NEWLINE\n";
-};
-
 sliceop					: ":"
 						| ":" test
 						;
@@ -718,10 +637,7 @@ small_stmt				: expr_stmt																{fout_diag << "BISON:\tsmall_stmt : exp
 						| del_stmt
 						| pass_stmt
 						| flow_stmt																{fout_diag << "BISON:\tsmall_stmt : flow_stmt\n";}
-						| import_stmt
 						| global_stmt
-						| nonlocal_stmt
-						| assert_stmt
 						;
 star_expr:
 "*" expr
@@ -814,10 +730,7 @@ or_test {
 		fout_diag << "SVAL:\t" << "false" << "\n";
 }|
 or_test "if" or_test "else" test
-|
-lambdef {
-	fout_diag << "BISON:\ttest : lambdef\n";
-};
+;
 
 testlist:
 testlist_sub {
@@ -859,7 +772,6 @@ testlist_sub "," test
 ;
 
 test_nocond				: or_test
-						| lambdef_nocond
 						;
 
 tfpdef					: NAME 
@@ -881,15 +793,6 @@ trailer_star trailer {
 	fout_diag << "BISON:\ttrailer_star : trailer_star trailer\n";
 };
 
-try_stmt				: "try" ":" suite try_stmt_sub
-						| "try" ":" suite try_stmt_sub "finally" ":" suite
-						| "try" ":" suite try_stmt_sub "else" ":" suite 
-						| "try" ":" suite try_stmt_sub "else" ":" suite "finally" ":" suite
-						| "try" ":" suite "finally" ":" suite
-						;
-try_stmt_sub			: except_clause ":" suite
-						| try_stmt_sub except_clause ":" suite
-						;
 typedargslist			: tfpdef  typedargslist_ct typedargslist_long
 						| tfpdef "=" test typedargslist_ct typedargslist_long
 						| "*" typedargslist_ct
@@ -965,15 +868,6 @@ xor_expr "^" and_expr {
 	fout_diag << "BISON:\txor_expr : xor_expr \"^\" and_expr\n";
 	fout_diag << "SVAL:\t" << $<Number>$ << "\n";
 };
-
-yield_arg				: "from" test
-						| testlist
-						;
-yield_expr				: "yield"
-						| "yield" yield_arg
-						;
-yield_stmt				: yield_expr
-						;
 %%
 
 int main(int argc, char * argv[]) {

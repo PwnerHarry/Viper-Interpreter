@@ -103,19 +103,11 @@ literal		{number}
 
 
 "from"		{*fout << mylineno << "\t" << FROM << "\t" << YYText() << "\n";}
-"nonlocal"	{*fout << mylineno << "\t" << NONLOCAL << "\t" << YYText() << "\n";}
 "raise"		{*fout << mylineno << "\t" << RAISE << "\t" << YYText() << "\n";}
-"try"		{*fout << mylineno << "\t" << TRY << "\t" << YYText() << "\n";}
 "del"		{*fout << mylineno << "\t" << DEL << "\t" << YYText() << "\n";}
 "as"		{*fout << mylineno << "\t" << AS << "\t" << YYText() << "\n";}
-"assert"	{*fout << mylineno << "\t" << ASSERT << "\t" << YYText() << "\n";}
 "is"		{*fout << mylineno << "\t" << IS << "\t" << YYText() << "\n";}
-"except"	{*fout << mylineno << "\t" << EXCEPT << "\t" << YYText() << "\n";}
-"finally"	{*fout << mylineno << "\t" << FINALLY << "\t" << YYText() << "\n";}
-"lambda"	{*fout << mylineno << "\t" << LAMBDA << "\t" << YYText() << "\n";}
-"yield"		{*fout << mylineno << "\t" << YIELD << "\t" << YYText() << "\n";}
 "exec"		{*fout << mylineno << "\t" << EXEC << "\t" << YYText() << "\n";}
-"import"	{*fout << mylineno << "\t" << IMPORT << "\t" << YYText() << "\n";}
 "with"		{*fout << mylineno << "\t" << WITH << "\t" << YYText() << "\n";}
 "while"		{*fout << mylineno << "\t" << WHILE << "\t" << YYText() << "\n";}
 "break"		{*fout << mylineno << "\t" << BREAK << "\t" << YYText() << "\n";}
@@ -133,8 +125,6 @@ literal		{number}
 "or"		{*fout << mylineno << "\t" << OR << "\t" << YYText() << "\n";}
 "if"		{*fout << mylineno << "\t" << IF << "\t" << YYText() << "\n";}
 "def"		{*fout << mylineno << "\t" << DEF << "\t" << YYText() << "\n";}
-"async"		{*fout << mylineno << "\t" << ASYNC << "\t" << YYText() << "\n";}
-"await"		{*fout << mylineno << "\t" << AWAIT << "\t" << YYText() << "\n";}
 
 
 "**"		{*fout << mylineno << "\t" << DOUBLESTAR << "\t" << YYText() << "\n";}
