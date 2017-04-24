@@ -107,12 +107,9 @@ literal		{number}
 "del"		{*fout << mylineno << "\t" << DEL << "\t" << YYText() << "\n";}
 "as"		{*fout << mylineno << "\t" << AS << "\t" << YYText() << "\n";}
 "is"		{*fout << mylineno << "\t" << IS << "\t" << YYText() << "\n";}
-"exec"		{*fout << mylineno << "\t" << EXEC << "\t" << YYText() << "\n";}
-"with"		{*fout << mylineno << "\t" << WITH << "\t" << YYText() << "\n";}
 "while"		{*fout << mylineno << "\t" << WHILE << "\t" << YYText() << "\n";}
 "break"		{*fout << mylineno << "\t" << BREAK << "\t" << YYText() << "\n";}
 "continue"	{*fout << mylineno << "\t" << CONTINUE << "\t" << YYText() << "\n";}
-"global"	{*fout << mylineno << "\t" << GLOBAL << "\t" << YYText() << "\n";}
 "elif"		{*fout << mylineno << "\t" << ELIF << "\t" << YYText() << "\n";}
 "else"		{*fout << mylineno << "\t" << ELSE << "\t" << YYText() << "\n";}
 "pass"		{*fout << mylineno << "\t" << PASS << "\t" << YYText() << "\n";}

@@ -36,8 +36,6 @@ union YYSTYPE{
 %token	SEMI				";"
 %token	NEWLINE				"\n"
 %token	FROM				"from"
-%token	EXEC				"exec"
-%token	WITH				"with"
 %token	RAISE				"raise"
 %token	DEL					"del"
 %token	AS					"as"
@@ -45,7 +43,6 @@ union YYSTYPE{
 %token	WHILE				"while"
 %token	BREAK				"break"
 %token	CONTINUE			"continue"
-%token	GLOBAL				"global"
 %token	ELIF				"elif"
 %token	ELSE				"else"
 %token	PASS				"pass"
@@ -103,38 +100,39 @@ union YYSTYPE{
 %left "*" "/"
 
 %%
-file_input:
-file_input_sub ENDMARKER {
-	fout_diag << "BISON:\tfile_input : file_input_sub ENDMARKER\n";
-};
+input:
+	file_input_sub ENDMARKER {
+		fout_diag << "BISON:\tfile_input : file_input_sub ENDMARKER\n";
+	};
 
 and_expr:
-shift_expr {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\tand_expr : shift_expr\n";
-	dispasn($<AST>$);
-}|
-and_expr "&" shift_expr {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = int($<AST>1->Value.Number) & int($<AST>3->Value.Number);
-	delete $<AST>1;
-	delete $<AST>3;
-	fout_diag << "BISON:\tand_expr : and_expr \"&\" shift_expr\n";
-	dispasn($<AST>$);
-};
+	shift_expr {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON:\tand_expr : shift_expr\n";
+		dispasn($<AST>$);
+	}|
+	and_expr "&" shift_expr {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = int($<AST>1->Value.Number) & int($<AST>3->Value.Number);
+		delete $<AST>1;
+		delete $<AST>3;
+		fout_diag << "BISON:\tand_expr : and_expr \"&\" shift_expr\n";
+		dispasn($<AST>$);
+	};
 
 and_test:
-not_test {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\tand_test : not_test\n";
-	dispasn($<AST>$);
-}|
-and_test "and" not_test {
-	$<AST>$ = newnode(BOOL);
-	$<AST>$->Value.Bool = $<AST>1->Value.Bool && $<AST>3->Value.Bool;
-	fout_diag << "BISON:\tand_test : and_test \"and\" not_test\n";
-	dispasn($<AST>$);
-};
+	not_test {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON:\tand_test : not_test\n";
+		dispasn($<AST>$);
+	}|
+	and_test "and" not_test {
+		$<AST>$ = newnode(BOOL);
+		$<AST>$->Value.Bool = $<AST>1->Value.Bool && $<AST>3->Value.Bool;
+		fout_diag << "BISON:\tand_test : and_test \"and\" not_test\n";
+		dispasn($<AST>$);
+	};
+
 annassign				: ":" test
 						| ":" test "=" test
 						;
@@ -145,90 +143,78 @@ arglist_sub				: argument
 						| arglist_sub "," argument
 						;
 argument:
-test {
-	fout_diag << "BISON:\targument : test\n";
-}|
-test comp_for
-|
-test "=" test
-|
-"**" test
-|
-"*" test 
-;
+	test {
+		fout_diag << "BISON:\targument : test\n";
+	}|
+	test comp_for
+	|
+	test "=" test
+	|
+	"**" test
+	|
+	"*" test 
+	;
 
 arith_expr:
-term {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\tarith_expr : term\n";
-	dispasn($<AST>$);
-}|
-arith_expr "+" term {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = $<AST>1->Value.Number + $<AST>3->Value.Number;
-	delete $<AST>1;
-	delete $<AST>3;
-	fout_diag << "BISON:\tarith_expr : arith_expr \"+\" term\n";
-	dispasn($<AST>$);
-}|
-arith_expr "-" term {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = $<AST>1->Value.Number - $<AST>3->Value.Number;
-	delete $<AST>1;
-	delete $<AST>3;
-	fout_diag << "BISON:\tarith_expr : arith_expr \"-\" term\n";
-	dispasn($<AST>$);
-};
+	term {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON:\tarith_expr : term\n";
+		dispasn($<AST>$);
+	}|
+	arith_expr "+" term {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = $<AST>1->Value.Number + $<AST>3->Value.Number;
+		delete $<AST>1;
+		delete $<AST>3;
+		fout_diag << "BISON:\tarith_expr : arith_expr \"+\" term\n";
+		dispasn($<AST>$);
+	}|
+	arith_expr "-" term {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = $<AST>1->Value.Number - $<AST>3->Value.Number;
+		delete $<AST>1;
+		delete $<AST>3;
+		fout_diag << "BISON:\tarith_expr : arith_expr \"-\" term\n";
+		dispasn($<AST>$);
+	};
 
 atom:
-"..."
-|
-"None"										
-|
-"True" {
-	$<AST>$->Value.Bool = true;
-	dispasn($<AST>$);
-}|
-"False" {
-	$<AST>$->Value.Bool = false;
-	dispasn($<AST>$);
-}|
-NAME {
-	$<AST>$ = newnode(NAME);
-	$<AST>$->Value.Name = $<Name>1;
-	fout_diag << "BISON:\tatom : NAME\n";
-	dispasn($<AST>$);
-}|
-NUMBER {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = $<Number>1;
-	fout_diag << "BISON:\tatom : NUMBER\n";
-	dispasn($<AST>$);
-}|
-string_plus
-|
-"(" ")"
-|
-"(" testlist_comp ")"
-|
-"[" "]"
-|
-"[" testlist_comp "]"
-|
-"{" "}"
-|
-"{" dictorsetmaker "}"
-;
+	"True" {
+		$<AST>$->Value.Bool = true;
+		dispasn($<AST>$);
+	}|
+	"False" {
+		$<AST>$->Value.Bool = false;
+		dispasn($<AST>$);
+	}|
+	NAME {
+		$<AST>$ = newnode(NAME);
+		$<AST>$->Value.Name = $<Name>1;
+		fout_diag << "BISON:\tatom : NAME\n";
+		dispasn($<AST>$);
+	}|
+	STRING {
+		$<AST>$ = newnode(STRING);
+		$<AST>$->Value.String = $<String>1;
+		fout_diag << "BISON:\tatom : STRING\n";
+		dispasn($<AST>$);
+	}|
+	NUMBER {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = $<Number>1;
+		fout_diag << "BISON:\tatom : NUMBER\n";
+		dispasn($<AST>$);
+	};
 
 atom_expr:
-atom {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\tatom_expr : atom\n";
-	dispasn($<AST>$);
-}|
-atom trailer_plus {
-	fout_diag << "BISON:\tatom_expr : atom trailer_plus\n";		
-};
+	atom {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON:\tatom_expr : atom\n";
+		dispasn($<AST>$);
+	}|
+	atom trailer_plus {
+		fout_diag << "BISON:\tatom_expr : atom trailer_plus\n";		
+	};
 
 augassign				: "+="
 						| "-="
@@ -260,57 +246,53 @@ classdef:
 
 comparison:
 expr {
-	$<AST>$ = newnode(BOOL);
-	if($<AST>1->Value.Number)
-		$<AST>$->Value.Bool = true;
-	else
-		$<AST>$->Value.Bool = false;
+	$<AST>$ = $<AST>1;
 	fout_diag << "BISON:\tcomparison : expr\n";
 	dispasn($<AST>$);
 }|
 comparison comp_op expr {
-	$<AST>$ = newnode(BOOL);
+	$<AST>$ = newnode(NUMBER);
 	switch (int($<AST>2->Value.Number)) {
 		case LESS: {
 			if ($<AST>1->Value.Number < $<AST>3->Value.Number)
-				$<AST>$->Value.Bool = true;
+				$<AST>$->Value.Number = 1;
 			else
-				$<AST>$->Value.Bool = false;
+				$<AST>$->Value.Bool = 0;
 			break;
 		}
 		case GREATER: {
 			if ($<AST>1->Value.Number > $<AST>3->Value.Number)
-				$<AST>$->Value.Bool = true;
+				$<AST>$->Value.Number = 1;
 			else
-				$<AST>$->Value.Bool = false;
+				$<AST>$->Value.Number = 0;
 			break;
 		}
 		case EQEQUAL: {
 			if ($<AST>1->Value.Number == $<AST>3->Value.Number)
-				$<AST>$->Value.Bool = true;
+				$<AST>$->Value.Number = 1;
 			else
-				$<AST>$->Value.Bool = false;
+				$<AST>$->Value.Number = 0;
 			break;
 		}
 		case GREATEREQUAL: {
 			if ($<AST>1->Value.Number >= $<AST>3->Value.Number)
-				$<AST>$->Value.Bool = true;
+				$<AST>$->Value.Number = 1;
 			else
-				$<AST>$->Value.Bool = false;
+				$<AST>$->Value.Number = 0;
 			break;
 		}
 		case LESSEQUAL: {
 			if ($<AST>1->Value.Number <= $<AST>3->Value.Number)
-				$<AST>$->Value.Bool = true;
+				$<AST>$->Value.Number = 1;
 			else
-				$<AST>$->Value.Bool = false;
+				$<AST>$->Value.Number = 0;
 			break;
 		}
 		case NOTEQUAL: {
 			if ($<AST>1->Value.Number != $<AST>3->Value.Number)
-				$<AST>$->Value.Bool = true;
+				$<AST>$->Value.Number = 1;
 			else
-				$<AST>$->Value.Bool = false;
+				$<AST>$->Value.Number = 0;
 			break;
 		}
 		case IN: {
@@ -506,7 +488,7 @@ expr_stmt				: testlist_star_expr annassign
 						| testlist_star_expr augassign testlist
 						| testlist_star_expr expr_stmt_sub_sub
 						;
-expr_stmt_sub_sub		: %empty
+expr_stmt_sub_sub		: %empty {$<AST>$ = newnode(0);}
 						| expr_stmt_sub_sub "=" testlist_star_expr
 						;
 factor:
@@ -542,9 +524,6 @@ for_stmt				: "for" exprlist "in" testlist ":" suite
 funcdef					: "def" NAME parameters ":" suite										{fout_diag << "BISON:\tfuncdef : \"def\" NAME parameters \":\" suite\n";}
 						| "def" NAME parameters "->" test ":" suite								{fout_diag << "BISON:\tfuncdef : \"def\" NAME parameters \"->\" test \":\" suite\n";}
 						;
-global_stmt				: "global" NAME
-						| global_stmt "," NAME
-						;
 if_stmt:
 "if" test ":" suite if_stmt_sub {
 }|
@@ -553,7 +532,7 @@ if_stmt:
 
 if_stmt_sub:
 %empty {
-	$<Number>$ = 0;
+	$<AST>$ = newnode(0);
 }|
 if_stmt_sub "elif" test ":" suite
 ;
@@ -561,14 +540,22 @@ if_stmt_sub "elif" test ":" suite
 not_test:
 "not" not_test {
 	$<AST>$ = newnode(BOOL);
-	$<AST>$->Value.Bool = !$<AST>1->Value.Bool;
+	if (!$<AST>1->Value.Number)
+		$<AST>$->Value.Bool = true;
+	else
+		$<AST>$->Value.Bool = false;
 	delete $<AST>1;
 	delete $<AST>2;
 	fout_diag << "BISON:\tnot_test : \"not\" not_test\n";
+	delete $<AST>2;
 	dispasn($<AST>$);
 }|
 comparison {
-	$<AST>$ = $<AST>1;
+	$<AST>$ = newnode(BOOL);
+	if ($<AST>1->Value.Number)
+		$<AST>$->Value.Bool = true;
+	else
+		$<AST>$->Value.Bool = false;
 	fout_diag << "BISON:\tnot_test : comparison\n";
 	dispasn($<AST>$);
 };
@@ -597,7 +584,7 @@ power:
 atom_expr {
 	$<AST>$ = $<AST>1;
 	fout_diag << "BISON:\tpower : atom_expr" << "\n";
-	fout_diag << "SVAL:\t" << $<AST>$->Value.Number << "\n";
+	dispasn($<AST>$);
 }|
 atom_expr "**" factor {
 	$<AST>$ = newnode(NUMBER);
@@ -605,7 +592,7 @@ atom_expr "**" factor {
 	delete $<AST>1;
 	delete $<AST>3;
 	fout_diag << "BISON:\tpower : atom_expr \"**\" factor" << "\n";
-	fout_diag << "SVAL:\t" << $<AST>$->Value.Number << "\n";
+	dispasn($<AST>$);
 }
 ;
 raise_stmt				: "raise"
@@ -624,7 +611,7 @@ shift_expr:
 arith_expr {
 	$<AST>$ = $<AST>1;
 	fout_diag << "BISON:\tshift_expr : arith_expr\n";
-	fout_diag << "SVAL:\t" << $<AST>$->Value.Number << "\n";
+	dispasn($<AST>$);
 }|
 shift_expr "<<" arith_expr {
 	$<AST>$ = newnode(NUMBER);
@@ -632,7 +619,7 @@ shift_expr "<<" arith_expr {
 	delete $<AST>1;
 	delete $<AST>3;
 	fout_diag << "BISON:\tshift_expr : shift_expr \"<<\" arith_expr\n";
-	fout_diag << "SVAL:\t" << $<AST>$->Value.Number << "\n";
+	dispasn($<AST>$);
 }|
 shift_expr ">>" arith_expr {
 	$<AST>$ = newnode(NUMBER);
@@ -640,7 +627,7 @@ shift_expr ">>" arith_expr {
 	delete $<AST>1;
 	delete $<AST>3;
 	fout_diag << "BISON:\tshift_expr : shift_expr \">>\" arith_expr\n";
-	fout_diag << "SVAL:\t" << $<AST>$->Value.Number << "\n";
+	dispasn($<AST>$);
 };
 
 simple_stmt:
@@ -652,6 +639,7 @@ small_stmt simple_stmt_sub ";" NEWLINE
 
 simple_stmt_sub:
 %empty {
+	$<AST>$ =newnode(0);
 	fout_diag << "BISON:\tsimple_stmt_sub : \n";
 }|
 simple_stmt_sub ";" small_stmt
@@ -664,7 +652,6 @@ small_stmt				: expr_stmt																{fout_diag << "BISON:\tsmall_stmt : exp
 						| del_stmt
 						| pass_stmt
 						| flow_stmt																{fout_diag << "BISON:\tsmall_stmt : flow_stmt\n";}
-						| global_stmt
 						;
 star_expr:
 "*" expr
@@ -872,14 +859,6 @@ vfpdef					: NAME
 						;
 while_stmt				: "while" test ":" suite
 						| "while" test ":" suite "else" ":" suite
-						;
-with_item				: test
-						| test "as" expr
-						;
-with_stmt				: "with" with_stmt_sub ":" suite
-						;
-with_stmt_sub			: with_item
-						| with_stmt_sub "," with_item
 						;
 
 xor_expr:
