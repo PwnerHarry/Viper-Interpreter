@@ -1,11 +1,3 @@
-typedef union {
-	double Number;
-	char * String;
-	char * Name;
-	char Char;
-	bool Bool;
-	int Int;
-} SValue;
 class asn {
 public:
 	int nodetype;

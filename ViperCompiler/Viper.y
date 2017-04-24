@@ -1,11 +1,20 @@
 %{
 using namespace std;
+typedef union {
+	double Number;
+	char * String;
+	char * Name;
+	char Char;
+	bool Bool;
+	int Int;
+} SValue;
 #include "fstream"
 const int TOKEN_TABLE_SIZE = 4096;
 ofstream fout_diag("PROCESS.log", ios::out);
 #include "stdafx.h"
 TokenTable * T = new TokenTable;
 #include "ast.h"
+#include "symtable.h"
 union YYSTYPE{
 	ast AST;
 	double Number;
@@ -133,9 +142,6 @@ and_test:
 		dispasn($<AST>$);
 	};
 
-annassign				: ":" test
-						| ":" test "=" test
-						;
 arglist					: arglist_sub
 						| arglist_sub ","
 						;
@@ -208,6 +214,7 @@ atom:
 
 atom_expr:
 	atom {
+		//如果NAME被规约成这个，它就应该应该提供值而不是其他
 		$<AST>$ = $<AST>1;
 		fout_diag << "BISON:\tatom_expr : atom\n";
 		dispasn($<AST>$);
@@ -216,111 +223,95 @@ atom_expr:
 		fout_diag << "BISON:\tatom_expr : atom trailer_plus\n";		
 	};
 
-augassign				: "+="
-						| "-="
-						| "*="
-						| "@="
-						| "/="
-						| "%="
-						| "&="
-						| "|="
-						| "^="
-						| "<<="
-						| ">>="
-						| "**="
-						| "//="
-						;
-
 break_stmt:
-"break"
-;
+	"break" {
+		$<AST>$ = newnode(BREAK);
+	};
 
 classdef:
-"class" NAME ":" suite {
-	fout_diag << "BISON:\tclassdef : \"class\" NAME : suite\n";
-}|
-"class" NAME "(" ")" ":" suite
-|
-"class" NAME "(" arglist ")" ":" suite
-;
+	"class" NAME ":" suite {
+		fout_diag << "BISON:\tclassdef : \"class\" NAME : suite\n";
+	}|
+	"class" NAME "(" ")" ":" suite
+	|
+	"class" NAME "(" arglist ")" ":" suite
+	;
 
 comparison:
-expr {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\tcomparison : expr\n";
-	dispasn($<AST>$);
-}|
-comparison comp_op expr {
-	$<AST>$ = newnode(NUMBER);
-	switch (int($<AST>2->Value.Number)) {
-		case LESS: {
-			if ($<AST>1->Value.Number < $<AST>3->Value.Number)
-				$<AST>$->Value.Number = 1;
-			else
-				$<AST>$->Value.Bool = 0;
-			break;
+	expr {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON:\tcomparison : expr\n";
+		dispasn($<AST>$);
+	}|
+	comparison comp_op expr {
+		$<AST>$ = newnode(NUMBER);
+		switch (int($<AST>2->Value.Number)) {
+			case LESS: {
+				if ($<AST>1->Value.Number < $<AST>3->Value.Number)
+					$<AST>$->Value.Number = 1;
+				else
+					$<AST>$->Value.Bool = 0;
+				break;
+			}
+			case GREATER: {
+				if ($<AST>1->Value.Number > $<AST>3->Value.Number)
+					$<AST>$->Value.Number = 1;
+				else
+					$<AST>$->Value.Number = 0;
+				break;
+			}
+			case EQEQUAL: {
+				if ($<AST>1->Value.Number == $<AST>3->Value.Number)
+					$<AST>$->Value.Number = 1;
+				else
+					$<AST>$->Value.Number = 0;
+				break;
+			}
+			case GREATEREQUAL: {
+				if ($<AST>1->Value.Number >= $<AST>3->Value.Number)
+					$<AST>$->Value.Number = 1;
+				else
+					$<AST>$->Value.Number = 0;
+				break;
+			}
+			case LESSEQUAL: {
+				if ($<AST>1->Value.Number <= $<AST>3->Value.Number)
+					$<AST>$->Value.Number = 1;
+				else
+					$<AST>$->Value.Number = 0;
+				break;
+			}
+			case NOTEQUAL: {
+				if ($<AST>1->Value.Number != $<AST>3->Value.Number)
+					$<AST>$->Value.Number = 1;
+				else
+					$<AST>$->Value.Number = 0;
+				break;
+			}
+			case IN: {
+				/*$1 is within $3*/
+				break;
+			}
+			case IS: {
+				/*解释运行树的时候再说吧*/
+				break;
+			}
+			default: {
+				break;
+			}
 		}
-		case GREATER: {
-			if ($<AST>1->Value.Number > $<AST>3->Value.Number)
-				$<AST>$->Value.Number = 1;
-			else
-				$<AST>$->Value.Number = 0;
-			break;
-		}
-		case EQEQUAL: {
-			if ($<AST>1->Value.Number == $<AST>3->Value.Number)
-				$<AST>$->Value.Number = 1;
-			else
-				$<AST>$->Value.Number = 0;
-			break;
-		}
-		case GREATEREQUAL: {
-			if ($<AST>1->Value.Number >= $<AST>3->Value.Number)
-				$<AST>$->Value.Number = 1;
-			else
-				$<AST>$->Value.Number = 0;
-			break;
-		}
-		case LESSEQUAL: {
-			if ($<AST>1->Value.Number <= $<AST>3->Value.Number)
-				$<AST>$->Value.Number = 1;
-			else
-				$<AST>$->Value.Number = 0;
-			break;
-		}
-		case NOTEQUAL: {
-			if ($<AST>1->Value.Number != $<AST>3->Value.Number)
-				$<AST>$->Value.Number = 1;
-			else
-				$<AST>$->Value.Number = 0;
-			break;
-		}
-		case IN: {
-			/*$1 is within $3*/
-			break;
-		}
-		case IS: {
-			/*解释运行树的时候再说吧*/
-			break;
-		}
-		default: {
-			break;
-		}
-	}
-	fout_diag << "BISON:\tcomparison : comparison comp_op expr\n";
-	delete $<AST>1;
-	delete $<AST>2;
-	delete $<AST>3;
-	dispasn($<AST>$);
-};
+		fout_diag << "BISON:\tcomparison : comparison comp_op expr\n";
+		delete $<AST>1;
+		delete $<AST>2;
+		delete $<AST>3;
+		dispasn($<AST>$);
+	};
 
 compound_stmt			: if_stmt
 						| while_stmt
 						| for_stmt
-						| with_stmt
 						| funcdef																{fout_diag << "BISON:\tcompound_stmt : funcdef\n";}
 						| classdef
-						| decorated
 						;
 
 comp_for				: "for" exprlist "in" or_test
@@ -395,18 +386,6 @@ comp_op:
 continue_stmt			: "continue"
 						;
 
-decorated				: decorators classdef
-						| decorators funcdef
-						;
-
-decorator				: "@" dotted_name NEWLINE
-						| "@" dotted_name "(" ")" NEWLINE
-						| "@" dotted_name "(" arglist ")" NEWLINE
-						;
-
-decorators				: decorator
-						| decorators decorator
-						;
 
 del_stmt				: "del" exprlist
 						;
@@ -439,24 +418,6 @@ dictorsetmaker_lsub		: %empty
 						| dictorsetmaker_lsub "," star_expr
 						;
 
-dotted_as_name			: dotted_name
-						| dotted_name "as" NAME
-						;
-
-dotted_as_names			: dotted_as_name
-						| dotted_as_names "," dotted_as_name
-						;
-
-dotted_name				: NAME
-						| dotted_name "," NAME
-						;
-
-dot_plus				: "."
-						| "..."
-						| dot_plus "."
-						| dot_plus "..."
-						;
-
 exprlist				: exprlist_es exprlist_sub
 						| exprlist_es exprlist_sub ","
 						;
@@ -484,13 +445,16 @@ expr "|" xor_expr {
 	dispasn($<AST>$);
 };
 
-expr_stmt				: testlist_star_expr annassign
-						| testlist_star_expr augassign testlist
-						| testlist_star_expr expr_stmt_sub_sub
-						;
-expr_stmt_sub_sub		: %empty {$<AST>$ = newnode(0);}
-						| expr_stmt_sub_sub "=" testlist_star_expr
-						;
+expr_stmt:
+NAME "=" expr {
+	$<AST>$ = newnode(EQUAL);
+	$<AST>$->l = newnode(NAME);
+	$<AST>$->l->Value.Name = $<Name>1;
+	$<AST>$->r = $<AST>3;
+	fout_diag << "BISON:\texpr_stmt : NAME \'=' expr\n";
+	dispasn($<AST>$);
+};
+
 factor:
 power {
 	$<AST>$ = $<AST>1;
@@ -648,11 +612,19 @@ simple_stmt_sub ";" small_stmt
 sliceop					: ":"
 						| ":" test
 						;
-small_stmt				: expr_stmt																{fout_diag << "BISON:\tsmall_stmt : expr_stmt\n";}
-						| del_stmt
-						| pass_stmt
-						| flow_stmt																{fout_diag << "BISON:\tsmall_stmt : flow_stmt\n";}
-						;
+small_stmt:
+	expr_stmt {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON:\tsmall_stmt : expr_stmt\n";
+	}|
+	del_stmt
+	|
+	pass_stmt
+	|
+	flow_stmt {
+		fout_diag << "BISON:\tsmall_stmt : flow_stmt\n";
+	};
+	
 star_expr:
 "*" expr
 ;
@@ -831,32 +803,31 @@ typedargslist_sub		: %empty
 						| "**" tfpdef
 						| "**" tfpdef ","
 						;
-varargslist				: vfpdef "=" test varargslist_another_sub
-						| vfpdef varargslist_another_sub
+varargslist				: NAME "=" test varargslist_another_sub
+						| NAME varargslist_another_sub
 						| "*" varargslist_sub_sub_sub
-						| "**" vfpdef
-						| "**" vfpdef ","
+						| "**" NAME
+						| "**" NAME ","
 						;
 varargslist_another_sub	: varargslist_sub
 						| varargslist_sub ","
 						| varargslist_sub "," "*" varargslist_sub_sub_sub
-						| varargslist_sub "," "**" vfpdef
-						| varargslist_sub "," "**" vfpdef ","
+						| varargslist_sub "," "**" NAME
+						| varargslist_sub "," "**" NAME ","
 						;
 varargslist_sub			: %empty
-						| varargslist_sub "," vfpdef
-						| varargslist_sub "," vfpdef "=" test
+						| varargslist_sub "," NAME
+						| varargslist_sub "," NAME "=" test
 						;
 varargslist_sub_sub		: varargslist_sub
 						| varargslist_sub ","
-						| varargslist_sub "," "**" vfpdef
-						| varargslist_sub "," "**" vfpdef ","
+						| varargslist_sub "," "**" NAME
+						| varargslist_sub "," "**" NAME ","
 						;
 varargslist_sub_sub_sub	: varargslist_sub_sub
-						| vfpdef varargslist_sub_sub
+						| NAME varargslist_sub_sub
 						;
-vfpdef					: NAME
-						;
+						
 while_stmt				: "while" test ":" suite
 						| "while" test ":" suite "else" ":" suite
 						;
@@ -889,6 +860,7 @@ int main(int argc, char * argv[]) {
 	}
 	ReadTokens(fin, T);
 	PrintTokens(T);
+	initTable();
 	yyparse();
 	fout_diag.close();
 	return 0;
@@ -1111,4 +1083,42 @@ ast newnode(int nodetype) {
 	if (nodetype == NUMBER || nodetype == BOOL || nodetype == NAME || nodetype == INT || nodetype == CHAR || nodetype == STRING)
 		N->valuenode = true;
 	return N;
+};
+SymTable addEntry(char * SYMNAME, int BEGIN, int END, int TYPE, SValue VALUE) {
+	SymTable T = new symentry;
+	T->NAME = SYMNAME;
+	T->LIMITS[0] = BEGIN;
+	T->LIMITS[1] = END;
+	T->TYPE = TYPE;
+	T->NEXT = SYMTABLE;
+	SYMTABLE = T;
+	switch (TYPE) {
+		case NUMBER: {
+				T->VALUE.Number = VALUE.Number;
+				break;
+		}
+		case INT: {
+			T->VALUE.Int = VALUE.Int;
+			break;
+		}
+		case BOOL: {
+			T->VALUE.Bool = VALUE.Bool;
+			break;
+		}
+		case STRING: {
+			T->VALUE.String = VALUE.String;
+			break;
+		}
+		case NAME: {
+			T->VALUE.Name = VALUE.Name;
+			break;
+		}
+		case CHAR: {
+			T->VALUE.Char = VALUE.Char;
+			break;
+		}
+		default:
+			break;
+	}
+	return T;
 };
