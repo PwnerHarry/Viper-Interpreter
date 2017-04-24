@@ -22,13 +22,6 @@ public:
 	};
 };
 typedef asn * ast;
-ast newnode(int nodetype) {
-	ast N = new asn;
-	N->nodetype = nodetype;
-	if (nodetype == NUMBER || nodetype == BOOL || nodetype == NAME || nodetype == INT || nodetype == CHAR || nodetype == STRING)
-		N->valuenode = true;
-	return N;
-};
 ast newast(int nodetype, ast l, ast r) {
 	ast N = new asn;
 	N->nodetype = nodetype;
@@ -37,3 +30,4 @@ ast newast(int nodetype, ast l, ast r) {
 	return N;
 };
 void dispasn(ast N);//定义在y文件末
+ast newnode(int nodetype);

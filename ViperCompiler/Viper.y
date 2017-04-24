@@ -575,7 +575,7 @@ comparison {
 
 or_test:
 and_test{
-	$<AST>$ = $<BoASTol>1;
+	$<AST>$ = $<AST>1;
 	fout_diag << "BISON:\tor_test : and_test\n";
 	dispasn($<AST>$);
 }|
@@ -721,7 +721,7 @@ term:
 factor {
 	$<AST>$ = $<AST>1;
 	fout_diag << "BISON:\tterm : factor\n";
-	fout_diag << "SVAL:\t" << $<AST>$->Value.Number << "\n";
+	dispasn($<AST>$);
 }|
 term "*" factor {
 	$<AST>$ = newnode(NUMBER);
@@ -729,7 +729,7 @@ term "*" factor {
 	delete $<AST>1;
 	delete $<AST>3;
 	fout_diag << "BISON:\tterm : term \"*\" factor\n";
-	fout_diag << "SVAL:\t" << $<AST>$->Value.Number << "\n";
+	dispasn($<AST>$);
 }|
 term "/" factor {
 	$<AST>$ = newnode(NUMBER);
@@ -737,44 +737,39 @@ term "/" factor {
 	delete $<AST>1;
 	delete $<AST>3;
 	fout_diag << "BISON:\tterm : term \"/\" factor\n";
-	fout_diag << "SVAL:\t" << $<AST>$->Value.Number << "\n";
+	dispasn($<AST>$);
 }|
 term "%" factor {
-	$<AST>$ = newnode(NUMBER);
+	$<AST>$ = newnode(INT);
 	$<AST>$->Value.Number = int($<AST>1->Value.Number) % int($<AST>3->Value.Number);
 	delete $<AST>1;
 	delete $<AST>3;
 	fout_diag << "BISON:\tterm : term \"%\" factor\n";
+	dispasn($<AST>$);
 }|
 term "//" factor {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = floor($<AST>1->Value.Number / $<AST>3->Value.Number);
+	$<AST>$ = newnode(INT);
+	$<AST>$->Value.Int = int(floor($<AST>1->Value.Number / $<AST>3->Value.Number));
 	delete $<AST>1;
 	delete $<AST>3;
 	fout_diag << "BISON:\tterm : term \"//\" factor\n";
-	fout_diag << "SVAL:\t" << $<AST>$->Value.Number << "\n";
+	dispasn($<AST>$);
 };
 
 test:
 or_test {
-	$<Bool>$ = $<Bool>1;
+	$<AST>$ = $<AST>1;
 	fout_diag << "BISON:\ttest : or_test\n";
-	if ($<Bool>$)
-		fout_diag << "SVAL:\t" << "true" << "\n";
-	else
-		fout_diag << "SVAL:\t" << "false" << "\n";
+	dispasn($<AST>$);
 }|
 or_test "if" or_test "else" test
 ;
 
 testlist:
 testlist_sub {
-	$<Bool>$ = $<Bool>1;
+	$<AST>$ = $<AST>1;
 	fout_diag << "BISON:\ttestlist : test testlist_sub\n";
-	if ($<Bool>$)
-		fout_diag << "SVAL:\t" << "true" << "\n";
-	else
-		fout_diag << "SVAL:\t" << "false" << "\n";
+	dispasn($<AST>$);
 }|
 testlist_sub ","
 ;
@@ -796,12 +791,9 @@ testlist_star_expr		: test dictorsetmaker_lsub
 						;
 testlist_sub:
 test {
-	$<Bool>$ = $<Bool>1;
+	$<AST>$ = $<AST>1;
 	fout_diag << "BISON:\ttestlist_sub : \n";
-	if ($<Bool>$)
-		fout_diag << "SVAL:\t" << "true" << "\n";
-	else
-		fout_diag << "SVAL:\t" << "false" << "\n";
+	dispasn($<AST>$);
 }|
 testlist_sub "," test
 ;
@@ -894,7 +886,7 @@ xor_expr:
 and_expr {
 	$<AST>$ = $<AST>1;
 	fout_diag << "BISON:\txor_expr : and_expr\n";
-	fout_diag << "SVAL:\t" << $<AST>$->Value.Number << "\n";
+	dispasn($<AST>$);
 }|
 xor_expr "^" and_expr {
 	$<AST>$ = newnode(NUMBER);
@@ -902,7 +894,7 @@ xor_expr "^" and_expr {
 	delete $<AST>1;
 	delete $<AST>3;
 	fout_diag << "BISON:\txor_expr : xor_expr \"^\" and_expr\n";
-	fout_diag << "SVAL:\t" << $<AST>$->Value.Number << "\n";
+	dispasn($<AST>$);
 };
 %%
 
@@ -1133,4 +1125,11 @@ void dispasn(ast N) {
 		default:
 			break;
 	}
+};
+ast newnode(int nodetype) {
+	ast N = new asn;
+	N->nodetype = nodetype;
+	if (nodetype == NUMBER || nodetype == BOOL || nodetype == NAME || nodetype == INT || nodetype == CHAR || nodetype == STRING)
+		N->valuenode = true;
+	return N;
 };
