@@ -6,8 +6,8 @@ del /F /S /Q ViperL.exe
 del /F /S /Q tokens.txt
 del /F /S /Q Viper.tab.c
 del /F /S /Q Viper.tab.h
-del /F /S /Q PROCESS.log
-del /F /S /Q ASSEMBLY.via
+del /F /S /Q PARSER.log
+del /F /S /Q INTERPRETER.log
 Accessories\bison -d Viper.y
 Accessories\flex Viper.l
 g++ lex.yy.cc

@@ -1,3 +1,4 @@
+const int FUNCTION = -123;
 class symentry {
 public:
 	char * NAME;
@@ -24,7 +25,7 @@ SymTable initTable() {
 SymTable searchTable(char * NAME) {
 	SymTable T = SYMTABLE;
 	while (T) {
-		if (!strcmp(T->NAME, NAME))
+		if (T->NAME && !strcmp(T->NAME, NAME))
 			return T;
 		else
 			T = T->NEXT;
@@ -32,3 +33,4 @@ SymTable searchTable(char * NAME) {
 	return 0;
 };
 SymTable addEntry(char * SYMNAME, int BEGIN, int END, int TYPE, SValue VALUE);//Definitions after main
+void disptable();

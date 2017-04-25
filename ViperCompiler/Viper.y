@@ -1,5 +1,6 @@
 %{
 using namespace std;
+const int INPUT = 12345;
 typedef union {
 	double Number;
 	char * String;
@@ -10,7 +11,7 @@ typedef union {
 } SValue;
 #include "fstream"
 const int TOKEN_TABLE_SIZE = 4096;
-ofstream fout_diag("PROCESS.log", ios::out);
+ofstream fout_diag("PARSER.log", ios::out);
 #include "stdafx.h"
 TokenTable * T = new TokenTable;
 #include "ast.h"
@@ -24,6 +25,7 @@ union YYSTYPE{
 	char Char;
 	bool Bool;
 };
+char * inttype(int type);
 %}
 %define api.value.type		{union YYSTYPE}
 %token	<Number>			NUMBER
@@ -106,11 +108,11 @@ union YYSTYPE{
 
 %%
 input:
-	ENDMARKER {
-		fout_diag << "BISON\tinput : ENDMARKER\n";
-	}|
-	file_input_sub ENDMARKER {
-		fout_diag << "BISON\tinput : file_input_sub ENDMARKER\n";
+	file_input ENDMARKER {
+		$<AST>$ = newnode(INPUT);
+		$<AST>$->l = $<AST>1;
+		ROOT = $<AST>$;
+		fout_diag << "BISON\tinput : file_input ENDMARKER\n";
 	};
 
 and_expr:
@@ -302,15 +304,19 @@ comparison:
 
 compound_stmt:
 	if_stmt {
+		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\tcompound_stmt : if_stmt\n";
 	}|
 	while_stmt{
+		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\tcompound_stmt : while_stmt\n";
 	}|
 	funcdef {
+		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\tcompound_stmt : funcdef\n";
 	}|
 	classdef{
+		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\tcompound_stmt : classdef\n";
 	};
 
@@ -407,34 +413,47 @@ factor:
 		dispasn($<AST>$);
 	};
 
-file_input_sub:
+file_input:
 	NEWLINE {
-		fout_diag << "BISON\tfile_input_sub : NEWLINE\n";
+		$<AST>$ = newnode(0);
+		fout_diag << "BISON\tfile_input : NEWLINE\n";
+		
 	}|
 	stmt {
-		fout_diag << "BISON\tfile_input_sub : stmt\n";
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\tfile_input : stmt\n";
 	}|
-	file_input_sub NEWLINE {
-		fout_diag << "BISON\tfile_input_sub : file_input_sub NEWLINE\n";
+	file_input NEWLINE {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\tfile_input : file_input_sub NEWLINE\n";
 	}|
-	file_input_sub stmt {
-		fout_diag << "BISON\tfile_input_sub : file_input_sub stmt\n";
+	file_input stmt {
+		$<AST>$ = $<AST>1;
+		asn * A = $<AST>1;
+		while (A->next)
+			A = A->next;
+		A->next = $<AST>2;//最右面的
+		fout_diag << "BISON\tfile_input : file_input_sub stmt\n";
 	};
 
 flow_stmt:
 	break_stmt {
+		$<AST>$ = newnode(BREAK);
 		fout_diag << "BISON\tflow_stmt : break_stmt\n";
 	}|
 	continue_stmt {
+		$<AST>$ = newnode(CONTINUE);
 		fout_diag << "BISON\tflow_stmt : continue_stmt\n";
 	}|
 	return_stmt {
+		$<AST>$ = newnode(RETURN);
 		fout_diag << "BISON\tflow_stmt : return_stmt\n";
 	};
 
 funcdef:
 	"def" NAME parameters ":" suite {
 		fout_diag << "BISON\tfuncdef : \"def\" NAME parameters \":\" suite\n";
+		//To be fulfilled, yet not right now!
 	};
 
 if_stmt:
@@ -565,19 +584,10 @@ shift_expr:
 	};
 
 simple_stmt:
-	small_stmt simple_stmt_sub NEWLINE {
-		fout_diag << "BISON\tsimple_stmt : small_stmt simple_stmt_sub NEWLINE\n";
-	}|
-	small_stmt simple_stmt_sub ";" NEWLINE
-	;
-
-simple_stmt_sub:
-	%empty {
-		$<AST>$ =newnode(0);
-		fout_diag << "BISON\tsimple_stmt_sub : \n";
-	}|
-	simple_stmt_sub ";" small_stmt
-	;
+	small_stmt NEWLINE {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\tsimple_stmt : small_stmt NEWLINE\n";
+	};
 
 sliceop					: ":"
 						| ":" test
@@ -587,17 +597,21 @@ small_stmt:
 		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\tsmall_stmt : expr_stmt\n";
 	}|
-	pass_stmt
-	|
+	pass_stmt {
+		$<AST>$ = newnode(0);
+		fout_diag << "BISON\tsmall_stmt : pass_stmt\n";
+	}|
 	flow_stmt {
 		fout_diag << "BISON\tsmall_stmt : flow_stmt\n";
 	};
 
 stmt:
 	simple_stmt {
+		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\tstmt : simple_stmt\n";
 	}|
 	compound_stmt {
+		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\tstmt : compound_stmt\n";
 	};
 
@@ -700,9 +714,7 @@ testlist_sub:
 	testlist_sub "," test
 	;
 
-tfpdef					: NAME 
-						| NAME ":" test
-						;
+tfpdef: NAME;
 
 trailer					: "(" ")"																{fout_diag << "BISON\ttrailer : \"(\" \")\"\n";}
 						| "(" arglist ")"														{fout_diag << "BISON\ttrailer : \"(\" arglist \")\"\n"; /*$$ = $2*/}
@@ -717,31 +729,12 @@ trailer_plus:
 		fout_diag << "BISON\ttrailer_star : trailer_star trailer\n";
 	};
 
-typedargslist			: tfpdef  typedargslist_ct typedargslist_long
-						| tfpdef "=" test typedargslist_ct typedargslist_long
-						| "*" typedargslist_ct
-						| "*" typedargslist_ct "," typedargslist_sub
-						| "*" tfpdef typedargslist_ct
-						| "*" tfpdef typedargslist_ct "," typedargslist_sub
-						| "**" tfpdef
-						| "**" tfpdef ","
+typedargslist			: tfpdef
+						| typedargslist_sub
 						;
-typedargslist_ct		: %empty
-						| typedargslist_ct "," tfpdef
-						| typedargslist_ct "," tfpdef "=" test
-						;
-typedargslist_long		: %empty
-						| "," 
-						| "," "*" typedargslist_ct
-						| "," "*" typedargslist_ct "," typedargslist_sub
-						| "," "*" tfpdef typedargslist_ct
-						| "," "*" tfpdef typedargslist_ct "," typedargslist_sub
-						| "," "**" tfpdef
-						| "," "**" tfpdef ","
-						;
-typedargslist_sub		: %empty
-						| "**" tfpdef
-						| "**" tfpdef ","
+
+typedargslist_sub		: "," tfpdef
+						| typedargslist_sub "," tfpdef
 						;
 						
 while_stmt:
@@ -780,6 +773,12 @@ int main(int argc, char * argv[]) {
 	PrintTokens(T);
 	initTable();
 	yyparse();
+	fout_diag << "\n" << "PARSING PROCESS SUCCESS" << "\n";
+	fout_diag.close();
+	fout_diag.open("INTERPRETER.log", ios::out);
+	interpret(ROOT);
+	disptable();
+	fout_diag << "\n" << "INTERPRETING PROCESS SUCCESS" << "\n";
 	fout_diag.close();
 	return 0;
 };
@@ -1002,7 +1001,7 @@ ast newnode(int nodetype) {
 		N->valuenode = true;
 	return N;
 };
-SymTable addEntry(char * SYMNAME, int BEGIN, int END, int TYPE, SValue VALUE) {
+SymTable addEntry(char * SYMNAME, int BEGIN, int END, int TYPE) {
 	SymTable T = new symentry;
 	T->NAME = SYMNAME;
 	T->LIMITS[0] = BEGIN;
@@ -1010,33 +1009,148 @@ SymTable addEntry(char * SYMNAME, int BEGIN, int END, int TYPE, SValue VALUE) {
 	T->TYPE = TYPE;
 	T->NEXT = SYMTABLE;
 	SYMTABLE = T;
-	switch (TYPE) {
-		case NUMBER: {
-				T->VALUE.Number = VALUE.Number;
-				break;
-		}
-		case INT: {
-			T->VALUE.Int = VALUE.Int;
-			break;
-		}
-		case BOOL: {
-			T->VALUE.Bool = VALUE.Bool;
-			break;
-		}
-		case STRING: {
-			T->VALUE.String = VALUE.String;
-			break;
-		}
-		case NAME: {
-			T->VALUE.Name = VALUE.Name;
-			break;
-		}
-		case CHAR: {
-			T->VALUE.Char = VALUE.Char;
-			break;
-		}
-		default:
-			break;
-	}
 	return T;
+};
+ast interpret(ast N) {
+	if (N == ROOT) {
+		fout_diag << "INTERPRETING ROOT NODE" << "\n";
+		if (N->l == 0) {
+			fout_diag << "SOURCE FILE EMPTY" << "\n";
+			return 0;//CAN DO ABSOLUTELY NOTHING
+		}
+		if (N->l && N->l->nodetype == 0) {
+			fout_diag << "SOURCE FILE EMPTY" << "\n";
+			return 0;//CAN DO ABSOLUTELY NOTHING
+		}
+		fout_diag << "NOT AN EMPTY SOURCE FILE" << "\n" << "\n" << "\n";
+		fout_diag << "TYPE OF NODE ROOT->L" << "\t" << inttype(N->l->nodetype) << "\n";
+		N = N->l;
+	}
+	switch (N->nodetype) {
+		case EQUAL:{
+			fout_diag << "ENTERING A NODE TYPE OF EQUAL" << "\n";
+			fout_diag << "TYPE OF NODE N->L" << "\t" << inttype(N->l->nodetype) << "\n";
+			fout_diag << "TYPE OF NODE N->R" << "\t" << inttype(N->r->nodetype) << "\n";
+			if (N->l->nodetype == NAME && N->l->valuenode && N->r->nodetype && N->r->valuenode){
+				fout_diag << "SEARCHING FOR A NAME IN THE TABLE:\t" << N->l->Value.Name << "\n";
+				SymTable S = searchTable(N->l->Value.Name);
+				if (!S){
+					fout_diag << "NOT FOUND IN THE TABLE" << "\n";
+					S = addEntry(N->l->Value.Name, -1, -1, N->r->nodetype);
+					fout_diag << "SYMBOL TABLE\tNEW SYMBOL\t" << S->NAME << "\n";
+				}
+				if (S && S->TYPE != 0 && S->TYPE != N->r->nodetype) {
+					fout_diag << "incompatible variable value" << "\n";
+					return 0;
+				}
+				switch (N->r->nodetype) {
+					case NUMBER:{
+						S->VALUE.Number = N->r->Value.Number;
+						break;
+					};
+					case INT:{
+						S->VALUE.Int = N->r->Value.Int;
+						break;
+					};
+					case CHAR:{
+						S->VALUE.Char = N->r->Value.Char;
+						break;
+					};
+					case STRING:{
+						S->VALUE.String = N->r->Value.String;
+						break;
+					};
+					case NAME:{
+						SymTable s = searchTable(N->r->Value.Name);
+						if (!s){
+							fout_diag << "a non-existed variable cannot be on the right side of a expr_stmt" << "\n";
+							return 0;
+						}
+						S->LIMITS[0] = s->LIMITS[0];
+						S->LIMITS[1] = s->LIMITS[1];
+						S->VALUE.Number = s->VALUE.Number;
+						S->VALUE.Int = s->VALUE.Int;
+						break;
+					};
+				}
+			}
+			break;
+		}
+	}
+	return 0;
+}
+char * inttype(int type){
+	switch (type) {
+		case EQUAL:{
+			char * R = new char[32];
+			strcpy(R, "EQUAL");
+			return R;
+			break;
+		}
+		case INT:{
+			char * R = new char[32];
+			strcpy(R, "INT");
+			return R;
+			break;
+		}
+		case NUMBER:{
+			char * R = new char[32];
+			strcpy(R, "NUMBER");
+			return R;
+			break;
+		}
+		case STRING:{
+			char * R = new char[32];
+			strcpy(R, "STRING");
+			return R;
+			break;
+		}
+		case CHAR:{
+			char * R = new char[32];
+			strcpy(R, "CHAR");
+			return R;
+			break;
+		}
+		case NAME:{
+			char * R = new char[32];
+			strcpy(R, "NAME");
+			return R;
+			break;
+		}
+		case 0:{
+			char * R = new char[32];
+			strcpy(R, "NULL");
+			return R;
+			break;
+		}
+	}
+}
+void disptable(){
+	SymTable S = SYMTABLE;
+	fout_diag << "SYMBOL TABLE" << "\n";
+	fout_diag << "NAME" << "\t" << "LBTM" << "\t" << "LTOP" << "\t" << "TYPE" << "\t" << "VALUE" << "\n";
+	while (S) {
+		if (S->TYPE){
+			fout_diag << S->NAME << "\t" << S->LIMITS[0] << "\t" << S->LIMITS[1] << "\t" << inttype(S->TYPE) << "\t";
+			switch (S->TYPE) {
+				case NUMBER:{
+					fout_diag << S->VALUE.Number << "\n";
+					break;
+				}
+				case INT:{
+					fout_diag << S->VALUE.Int << "\n";
+					break;
+				}
+				case STRING:{
+					fout_diag << S->VALUE.String << "\n";
+					break;
+				}
+				case CHAR:{
+					fout_diag << S->VALUE.Char << "\n";
+					break;
+				}
+			}
+		}
+		S = S->NEXT;
+	}
 };

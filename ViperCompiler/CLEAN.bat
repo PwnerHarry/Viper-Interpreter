@@ -9,4 +9,5 @@ del /F /S /Q tokens.txt
 del /F /S /Q Viper.tab.c
 del /F /S /Q Viper.tab.h
 del /F /S /Q PROCESS.log
-del /F /S /Q ASSEMBLY.via
+del /F /S /Q PARSER.log
+del /F /S /Q INTERPRETER.log
