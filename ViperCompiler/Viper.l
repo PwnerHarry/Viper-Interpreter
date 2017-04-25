@@ -103,8 +103,6 @@ literal		{number}
 
 
 "from"		{*fout << mylineno << "\t" << FROM << "\t" << YYText() << "\n";}
-"raise"		{*fout << mylineno << "\t" << RAISE << "\t" << YYText() << "\n";}
-"del"		{*fout << mylineno << "\t" << DEL << "\t" << YYText() << "\n";}
 "as"		{*fout << mylineno << "\t" << AS << "\t" << YYText() << "\n";}
 "is"		{*fout << mylineno << "\t" << IS << "\t" << YYText() << "\n";}
 "while"		{*fout << mylineno << "\t" << WHILE << "\t" << YYText() << "\n";}
@@ -114,8 +112,6 @@ literal		{number}
 "else"		{*fout << mylineno << "\t" << ELSE << "\t" << YYText() << "\n";}
 "pass"		{*fout << mylineno << "\t" << PASS << "\t" << YYText() << "\n";}
 "return"	{*fout << mylineno << "\t" << RETURN << "\t" << YYText() << "\n";}
-"in"		{*fout << mylineno << "\t" << IN << "\t" << YYText() << "\n";}
-"for"		{*fout << mylineno << "\t" << FOR << "\t" << YYText() << "\n";}
 "class"		{*fout << mylineno << "\t" << CLASS << "\t" << YYText() << "\n";}
 "not"		{*fout << mylineno << "\t" << NOT << "\t" << YYText() << "\n";}
 "and"		{*fout << mylineno << "\t" << AND << "\t" << YYText() << "\n";}

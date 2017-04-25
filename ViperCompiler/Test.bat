@@ -17,7 +17,6 @@ echo Lexer Success!
 del /F /S /Q lex.yy.cc
 del /F /S /Q a.exe
 g++ Viper.tab.c
-pause
 ren a.exe ViperS.exe
 ViperS tokens.txt
 pause

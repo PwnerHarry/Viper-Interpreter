@@ -45,8 +45,6 @@ union YYSTYPE{
 %token	SEMI				";"
 %token	NEWLINE				"\n"
 %token	FROM				"from"
-%token	RAISE				"raise"
-%token	DEL					"del"
 %token	AS					"as"
 %token	IS					"is"
 %token	WHILE				"while"
@@ -56,8 +54,6 @@ union YYSTYPE{
 %token	ELSE				"else"
 %token	PASS				"pass"
 %token	RETURN				"return"
-%token	IN					"in"
-%token	FOR					"for"
 %token	CLASS				"class"
 %token	NOT					"not"
 %token	AND					"and"
@@ -110,14 +106,17 @@ union YYSTYPE{
 
 %%
 input:
+	ENDMARKER {
+		fout_diag << "BISON\tinput : ENDMARKER\n";
+	}|
 	file_input_sub ENDMARKER {
-		fout_diag << "BISON:\tfile_input : file_input_sub ENDMARKER\n";
+		fout_diag << "BISON\tinput : file_input_sub ENDMARKER\n";
 	};
 
 and_expr:
 	shift_expr {
 		$<AST>$ = $<AST>1;
-		fout_diag << "BISON:\tand_expr : shift_expr\n";
+		fout_diag << "BISON\tand_expr : shift_expr\n";
 		dispasn($<AST>$);
 	}|
 	and_expr "&" shift_expr {
@@ -125,20 +124,20 @@ and_expr:
 		$<AST>$->Value.Number = int($<AST>1->Value.Number) & int($<AST>3->Value.Number);
 		delete $<AST>1;
 		delete $<AST>3;
-		fout_diag << "BISON:\tand_expr : and_expr \"&\" shift_expr\n";
+		fout_diag << "BISON\tand_expr : and_expr \"&\" shift_expr\n";
 		dispasn($<AST>$);
 	};
 
 and_test:
 	not_test {
 		$<AST>$ = $<AST>1;
-		fout_diag << "BISON:\tand_test : not_test\n";
+		fout_diag << "BISON\tand_test : not_test\n";
 		dispasn($<AST>$);
 	}|
 	and_test "and" not_test {
 		$<AST>$ = newnode(BOOL);
 		$<AST>$->Value.Bool = $<AST>1->Value.Bool && $<AST>3->Value.Bool;
-		fout_diag << "BISON:\tand_test : and_test \"and\" not_test\n";
+		fout_diag << "BISON\tand_test : and_test \"and\" not_test\n";
 		dispasn($<AST>$);
 	};
 
@@ -150,10 +149,8 @@ arglist_sub				: argument
 						;
 argument:
 	test {
-		fout_diag << "BISON:\targument : test\n";
+		fout_diag << "BISON\targument : test\n";
 	}|
-	test comp_for
-	|
 	test "=" test
 	|
 	"**" test
@@ -164,7 +161,7 @@ argument:
 arith_expr:
 	term {
 		$<AST>$ = $<AST>1;
-		fout_diag << "BISON:\tarith_expr : term\n";
+		fout_diag << "BISON\tarith_expr : term\n";
 		dispasn($<AST>$);
 	}|
 	arith_expr "+" term {
@@ -172,7 +169,7 @@ arith_expr:
 		$<AST>$->Value.Number = $<AST>1->Value.Number + $<AST>3->Value.Number;
 		delete $<AST>1;
 		delete $<AST>3;
-		fout_diag << "BISON:\tarith_expr : arith_expr \"+\" term\n";
+		fout_diag << "BISON\tarith_expr : arith_expr \"+\" term\n";
 		dispasn($<AST>$);
 	}|
 	arith_expr "-" term {
@@ -180,7 +177,7 @@ arith_expr:
 		$<AST>$->Value.Number = $<AST>1->Value.Number - $<AST>3->Value.Number;
 		delete $<AST>1;
 		delete $<AST>3;
-		fout_diag << "BISON:\tarith_expr : arith_expr \"-\" term\n";
+		fout_diag << "BISON\tarith_expr : arith_expr \"-\" term\n";
 		dispasn($<AST>$);
 	};
 
@@ -196,19 +193,19 @@ atom:
 	NAME {
 		$<AST>$ = newnode(NAME);
 		$<AST>$->Value.Name = $<Name>1;
-		fout_diag << "BISON:\tatom : NAME\n";
+		fout_diag << "BISON\tatom : NAME\n";
 		dispasn($<AST>$);
 	}|
 	STRING {
 		$<AST>$ = newnode(STRING);
 		$<AST>$->Value.String = $<String>1;
-		fout_diag << "BISON:\tatom : STRING\n";
+		fout_diag << "BISON\tatom : STRING\n";
 		dispasn($<AST>$);
 	}|
 	NUMBER {
 		$<AST>$ = newnode(NUMBER);
 		$<AST>$->Value.Number = $<Number>1;
-		fout_diag << "BISON:\tatom : NUMBER\n";
+		fout_diag << "BISON\tatom : NUMBER\n";
 		dispasn($<AST>$);
 	};
 
@@ -216,11 +213,11 @@ atom_expr:
 	atom {
 		//如果NAME被规约成这个，它就应该应该提供值而不是其他
 		$<AST>$ = $<AST>1;
-		fout_diag << "BISON:\tatom_expr : atom\n";
+		fout_diag << "BISON\tatom_expr : atom\n";
 		dispasn($<AST>$);
 	}|
 	atom trailer_plus {
-		fout_diag << "BISON:\tatom_expr : atom trailer_plus\n";		
+		fout_diag << "BISON\tatom_expr : atom trailer_plus\n";		
 	};
 
 break_stmt:
@@ -230,7 +227,7 @@ break_stmt:
 
 classdef:
 	"class" NAME ":" suite {
-		fout_diag << "BISON:\tclassdef : \"class\" NAME : suite\n";
+		fout_diag << "BISON\tclassdef : \"class\" NAME : suite\n";
 	}|
 	"class" NAME "(" ")" ":" suite
 	|
@@ -240,7 +237,7 @@ classdef:
 comparison:
 	expr {
 		$<AST>$ = $<AST>1;
-		fout_diag << "BISON:\tcomparison : expr\n";
+		fout_diag << "BISON\tcomparison : expr\n";
 		dispasn($<AST>$);
 	}|
 	comparison comp_op expr {
@@ -288,10 +285,6 @@ comparison:
 					$<AST>$->Value.Number = 0;
 				break;
 			}
-			case IN: {
-				/*$1 is within $3*/
-				break;
-			}
 			case IS: {
 				/*解释运行树的时候再说吧*/
 				break;
@@ -300,314 +293,291 @@ comparison:
 				break;
 			}
 		}
-		fout_diag << "BISON:\tcomparison : comparison comp_op expr\n";
+		fout_diag << "BISON\tcomparison : comparison comp_op expr\n";
 		delete $<AST>1;
 		delete $<AST>2;
 		delete $<AST>3;
 		dispasn($<AST>$);
 	};
 
-compound_stmt			: if_stmt
-						| while_stmt
-						| for_stmt
-						| funcdef																{fout_diag << "BISON:\tcompound_stmt : funcdef\n";}
-						| classdef
-						;
-
-comp_for				: "for" exprlist "in" or_test
-						| "for" exprlist "in" or_test comp_iter
-						;
-
-comp_if					: "if" test_nocond
-						| "if" test_nocond comp_iter
-						;
-
-comp_iter				: comp_for
-						| comp_if
-						;
+compound_stmt:
+	if_stmt {
+		fout_diag << "BISON\tcompound_stmt : if_stmt\n";
+	}|
+	while_stmt{
+		fout_diag << "BISON\tcompound_stmt : while_stmt\n";
+	}|
+	funcdef {
+		fout_diag << "BISON\tcompound_stmt : funcdef\n";
+	}|
+	classdef{
+		fout_diag << "BISON\tcompound_stmt : classdef\n";
+	};
 
 comp_op:
-"<" {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = LESS;
-	fout_diag << "BISON:\tcomp_op : \"<\"\n";
-}|
-">" {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = GREATER;
-	fout_diag << "BISON:\tcomp_op : \">\"\n";
-}|
-"==" {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = EQEQUAL;
-	fout_diag << "BISON:\tcomp_op : \"==\"\n";
-}|
-">=" {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = GREATEREQUAL;
-	fout_diag << "BISON:\tcomp_op : \">=\"\n";
-}|
-"<=" {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = LESSEQUAL;
-	fout_diag << "BISON:\tcomp_op : \"<=\"\n";
-}|
-"<>" {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = NOTEQUAL;
-	fout_diag << "BISON:\tcomp_op : \"<>\"\n";
-}|
-"!=" {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = NOTEQUAL;
-	fout_diag << "BISON:\tcomp_op : \"!=\"\n";
-}|
-"in" {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = IN;
-	fout_diag << "BISON:\tcomp_op : \"in\"\n";
-}|
-"not" "in" {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = -1;
-	fout_diag << "BISON:\tcomp_op : \"not\" \"in\"\n";
-}|
-"is" {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = IS;
-	fout_diag << "BISON:\tcomp_op : \"is\"\n";
-}|
-"is" "not" {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = -2;
-	fout_diag << "BISON:\tcomp_op : \"is\" \"not\"\n";
-};
+	"<" {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = LESS;
+		fout_diag << "BISON\tcomp_op : \"<\"\n";
+	}|
+	">" {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = GREATER;
+		fout_diag << "BISON\tcomp_op : \">\"\n";
+	}|
+	"==" {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = EQEQUAL;
+		fout_diag << "BISON\tcomp_op : \"==\"\n";
+	}|
+	">=" {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = GREATEREQUAL;
+		fout_diag << "BISON\tcomp_op : \">=\"\n";
+	}|
+	"<=" {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = LESSEQUAL;
+		fout_diag << "BISON\tcomp_op : \"<=\"\n";
+	}|
+	"<>" {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = NOTEQUAL;
+		fout_diag << "BISON\tcomp_op : \"<>\"\n";
+	}|
+	"!=" {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = NOTEQUAL;
+		fout_diag << "BISON\tcomp_op : \"!=\"\n";
+	}|
+	"is" {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = IS;
+		fout_diag << "BISON\tcomp_op : \"is\"\n";
+	}|
+	"is" "not" {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = -2;
+		fout_diag << "BISON\tcomp_op : \"is\" \"not\"\n";
+	};
 
 continue_stmt			: "continue"
 						;
 
-
-del_stmt				: "del" exprlist
-						;
-
-dictorsetmaker			: test ":" test comp_for
-						| test ":" test dictorsetmaker_sub
-						| test ":" test dictorsetmaker_sub ","
-						| "**" expr comp_for
-						| "**" expr dictorsetmaker_sub
-						| "**" expr dictorsetmaker_sub ","
-						| test comp_for
-						| test dictorsetmaker_lsub
-						| test dictorsetmaker_lsub ","
-						| star_expr comp_for
-						| star_expr dictorsetmaker_lsub
-						| star_expr dictorsetmaker_lsub ","
-						;
-
-dictorsetmaker_sub		: %empty
-						| "," test ":" test
-						| "," "**" expr
-						| dictorsetmaker_sub "," test ":" test
-						| dictorsetmaker_sub "," "**" expr
-						;
-
-dictorsetmaker_lsub		: %empty
-						| "," test
-						| "," star_expr
-						| dictorsetmaker_lsub "," test
-						| dictorsetmaker_lsub "," star_expr
-						;
-
-exprlist				: exprlist_es exprlist_sub
-						| exprlist_es exprlist_sub ","
-						;
-
-exprlist_es				: expr
-						| star_expr
-						;
-
-exprlist_sub			: %empty
-						| exprlist_sub "," exprlist_es
-						;
-
 expr:
-xor_expr {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\texpr : xor_expr\n";
-	dispasn($<AST>$);
-}|
-expr "|" xor_expr {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = int($<AST>1->Value.Number) | int($<AST>3->Value.Number);
-	delete $<AST>1;
-	delete $<AST>3;
-	fout_diag << "BISON:\texpr : expr \"|\" xor_expr\n";
-	dispasn($<AST>$);
-};
+	xor_expr {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\texpr : xor_expr\n";
+		dispasn($<AST>$);
+	}|
+	expr "|" xor_expr {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = int($<AST>1->Value.Number) | int($<AST>3->Value.Number);
+		delete $<AST>1;
+		delete $<AST>3;
+		fout_diag << "BISON\texpr : expr \"|\" xor_expr\n";
+		dispasn($<AST>$);
+	};
 
 expr_stmt:
-NAME "=" expr {
-	$<AST>$ = newnode(EQUAL);
-	$<AST>$->l = newnode(NAME);
-	$<AST>$->l->Value.Name = $<Name>1;
-	$<AST>$->r = $<AST>3;
-	fout_diag << "BISON:\texpr_stmt : NAME \'=' expr\n";
-	dispasn($<AST>$);
-};
+	NAME "=" expr {
+		$<AST>$ = newnode(EQUAL);
+		$<AST>$->l = newnode(NAME);
+		$<AST>$->l->Value.Name = $<Name>1;
+		$<AST>$->r = $<AST>3;
+		fout_diag << "BISON\texpr_stmt : NAME \'=' expr\n";
+		dispasn($<AST>$);
+	};
 
 factor:
-power {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\tfactor : power\n";
-	dispasn($<AST>$);
-}|
-"+" factor {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\tfactor : \"+\" factor\n";
-	dispasn($<AST>$);
-}|
-"-" factor{
-	$<AST>$ = $<AST>1;
-	$<AST>$->Value.Number = -1.0 * $<AST>$->Value.Number;
-	fout_diag << "BISON:\tfactor : \"-\" factor\n";
-	dispasn($<AST>$);
-};
+	power {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\tfactor : power\n";
+		dispasn($<AST>$);
+	}|
+	"+" factor {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\tfactor : \"+\" factor\n";
+		dispasn($<AST>$);
+	}|
+	"-" factor{
+		$<AST>$ = $<AST>1;
+		$<AST>$->Value.Number = -1.0 * $<AST>$->Value.Number;
+		fout_diag << "BISON\tfactor : \"-\" factor\n";
+		dispasn($<AST>$);
+	};
 
-file_input_sub			: %empty																{fout_diag << "BISON:\tfile_input_sub : \n";}
-						| file_input_sub NEWLINE												{fout_diag << "BISON:\tfile_input_sub : file_input_sub NEWLINE\n";}
-						| file_input_sub stmt													{fout_diag << "BISON:\tfile_input_sub : file_input_sub stmt\n";}
-						;
-flow_stmt				: break_stmt
-						| continue_stmt
-						| return_stmt															{fout_diag << "BISON:\tflow_stmt : return_stmt\n";}
-						| raise_stmt
-						;
-for_stmt				: "for" exprlist "in" testlist ":" suite
-						| "for" exprlist "in" testlist ":" suite "else" ":" suite
-						;
-funcdef					: "def" NAME parameters ":" suite										{fout_diag << "BISON:\tfuncdef : \"def\" NAME parameters \":\" suite\n";}
-						| "def" NAME parameters "->" test ":" suite								{fout_diag << "BISON:\tfuncdef : \"def\" NAME parameters \"->\" test \":\" suite\n";}
-						;
+file_input_sub:
+	NEWLINE {
+		fout_diag << "BISON\tfile_input_sub : NEWLINE\n";
+	}|
+	stmt {
+		fout_diag << "BISON\tfile_input_sub : stmt\n";
+	}|
+	file_input_sub NEWLINE {
+		fout_diag << "BISON\tfile_input_sub : file_input_sub NEWLINE\n";
+	}|
+	file_input_sub stmt {
+		fout_diag << "BISON\tfile_input_sub : file_input_sub stmt\n";
+	};
+
+flow_stmt:
+	break_stmt {
+		fout_diag << "BISON\tflow_stmt : break_stmt\n";
+	}|
+	continue_stmt {
+		fout_diag << "BISON\tflow_stmt : continue_stmt\n";
+	}|
+	return_stmt {
+		fout_diag << "BISON\tflow_stmt : return_stmt\n";
+	};
+
+funcdef:
+	"def" NAME parameters ":" suite {
+		fout_diag << "BISON\tfuncdef : \"def\" NAME parameters \":\" suite\n";
+	};
+
 if_stmt:
-"if" test ":" suite if_stmt_sub {
-}|
-"if" test ":" suite if_stmt_sub "else" ":" suite
-;
+	"if" test ":" suite if_stmt_sub {
+		$<AST>$ = newnode(IF);
+		$<AST>$->Value.Bool = $<AST>2->Value.Bool;
+		$<AST>$->l = $<AST>4;
+		$<AST>4->l = $<AST>5;
+		delete $<AST>2;
+	}|
+	"if" test ":" suite if_stmt_sub "else" ":" suite {
+		$<AST>$ = newnode(IF);
+		$<AST>$->Value.Bool = $<AST>2->Value.Bool;
+		$<AST>$->l = $<AST>4;
+		$<AST>$->r = $<AST>8;
+		$<AST>4->l = $<AST>5;
+		delete $<AST>2;
+	};
 
 if_stmt_sub:
-%empty {
-	$<AST>$ = newnode(0);
-}|
-if_stmt_sub "elif" test ":" suite
-;
+	%empty {
+		$<AST>$ = newnode(0);
+	}|
+	if_stmt_sub "elif" test ":" suite {
+		$<AST>$ = newnode(ELIF);
+		$<AST>$->Value.Bool = $<AST>3->Value.Bool;
+		if (!$<AST>1->nodetype)
+			$<AST>$->l = $<AST>5;
+		else {
+			ast T = $<AST>1;
+			while (T->l)
+				T = T->l;
+			T->l = $<AST>5;
+		}
+		delete $<AST>3;
+	};
 
 not_test:
-"not" not_test {
-	$<AST>$ = newnode(BOOL);
-	if (!$<AST>1->Value.Number)
-		$<AST>$->Value.Bool = true;
-	else
-		$<AST>$->Value.Bool = false;
-	delete $<AST>1;
-	delete $<AST>2;
-	fout_diag << "BISON:\tnot_test : \"not\" not_test\n";
-	delete $<AST>2;
-	dispasn($<AST>$);
-}|
-comparison {
-	$<AST>$ = newnode(BOOL);
-	if ($<AST>1->Value.Number)
-		$<AST>$->Value.Bool = true;
-	else
-		$<AST>$->Value.Bool = false;
-	fout_diag << "BISON:\tnot_test : comparison\n";
-	dispasn($<AST>$);
-};
+	"not" not_test {
+		$<AST>$ = newnode(BOOL);
+		if (!$<AST>1->Value.Number)
+			$<AST>$->Value.Bool = true;
+		else
+			$<AST>$->Value.Bool = false;
+		delete $<AST>1;
+		delete $<AST>2;
+		fout_diag << "BISON\tnot_test : \"not\" not_test\n";
+		delete $<AST>2;
+		dispasn($<AST>$);
+	}|
+	comparison {
+		$<AST>$ = newnode(BOOL);
+		if ($<AST>1->Value.Number)
+			$<AST>$->Value.Bool = true;
+		else
+			$<AST>$->Value.Bool = false;
+		fout_diag << "BISON\tnot_test : comparison\n";
+		dispasn($<AST>$);
+	};
 
 or_test:
-and_test{
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\tor_test : and_test\n";
-	dispasn($<AST>$);
-}|
-or_test "or" and_test {
-	$<AST>$ = newnode(BOOL);
-	$<AST>$->Value.Bool = $<AST>1->Value.Bool || $<AST>3->Value.Bool;
-	fout_diag << "BISON:\tor_test : or_test \"or\" and_test\n";
-	delete $<AST>1;
-	delete $<AST>3;
-	dispasn($<AST>$);
-};
+	and_test {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\tor_test : and_test\n";
+		dispasn($<AST>$);
+	}|
+	or_test "or" and_test {
+		$<AST>$ = newnode(BOOL);
+		$<AST>$->Value.Bool = $<AST>1->Value.Bool || $<AST>3->Value.Bool;
+		fout_diag << "BISON\tor_test : or_test \"or\" and_test\n";
+		delete $<AST>1;
+		delete $<AST>3;
+		dispasn($<AST>$);
+	};
 
-parameters				: "(" ")"																{fout_diag << "BISON:\tparameters : \"(\" \")\"\n";}
-						| "(" typedargslist ")"													{fout_diag << "BISON:\tparameters : \"(\" typedargslist \")\"\n";}
+parameters				: "(" ")"																{fout_diag << "BISON\tparameters : \"(\" \")\"\n";}
+						| "(" typedargslist ")"													{fout_diag << "BISON\tparameters : \"(\" typedargslist \")\"\n";}
 						;
-pass_stmt				: "pass"
-						;
+pass_stmt:
+	"pass" {
+		fout_diag << "BISON\tflow_stmt : return_stmt\n";
+	};
+
 power:
-atom_expr {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\tpower : atom_expr" << "\n";
-	dispasn($<AST>$);
-}|
-atom_expr "**" factor {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = pow($<AST>1->Value.Number, $<AST>3->Value.Number);
-	delete $<AST>1;
-	delete $<AST>3;
-	fout_diag << "BISON:\tpower : atom_expr \"**\" factor" << "\n";
-	dispasn($<AST>$);
-}
-;
-raise_stmt				: "raise"
-						| "raise" test
-						| "raise" test "from" test
-						;
+	atom_expr {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\tpower : atom_expr" << "\n";
+		dispasn($<AST>$);
+	}|
+	atom_expr "**" factor {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = pow($<AST>1->Value.Number, $<AST>3->Value.Number);
+		delete $<AST>1;
+		delete $<AST>3;
+		fout_diag << "BISON\tpower : atom_expr \"**\" factor" << "\n";
+		dispasn($<AST>$);
+	};
+
 return_stmt:
-"return" {
-	fout_diag << "BISON:\treturn_stmt : \"return\"\n";
-}|
-"return" testlist {
-	fout_diag << "BISON:\treturn_stmt : \"return\" testlist\n";
-};
+	"return" {
+		fout_diag << "BISON\treturn_stmt : \"return\"\n";
+	}|
+	"return" testlist {
+		fout_diag << "BISON\treturn_stmt : \"return\" testlist\n";
+	};
 
 shift_expr:
-arith_expr {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\tshift_expr : arith_expr\n";
-	dispasn($<AST>$);
-}|
-shift_expr "<<" arith_expr {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = $<AST>1->Value.Number * pow(2, int($<AST>3->Value.Number));
-	delete $<AST>1;
-	delete $<AST>3;
-	fout_diag << "BISON:\tshift_expr : shift_expr \"<<\" arith_expr\n";
-	dispasn($<AST>$);
-}|
-shift_expr ">>" arith_expr {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = $<AST>1->Value.Number / pow(2, int($<AST>3->Value.Number));
-	delete $<AST>1;
-	delete $<AST>3;
-	fout_diag << "BISON:\tshift_expr : shift_expr \">>\" arith_expr\n";
-	dispasn($<AST>$);
-};
+	arith_expr {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\tshift_expr : arith_expr\n";
+		dispasn($<AST>$);
+	}|
+	shift_expr "<<" arith_expr {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = $<AST>1->Value.Number * pow(2, int($<AST>3->Value.Number));
+		delete $<AST>1;
+		delete $<AST>3;
+		fout_diag << "BISON\tshift_expr : shift_expr \"<<\" arith_expr\n";
+		dispasn($<AST>$);
+	}|
+	shift_expr ">>" arith_expr {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = $<AST>1->Value.Number / pow(2, int($<AST>3->Value.Number));
+		delete $<AST>1;
+		delete $<AST>3;
+		fout_diag << "BISON\tshift_expr : shift_expr \">>\" arith_expr\n";
+		dispasn($<AST>$);
+	};
 
 simple_stmt:
-small_stmt simple_stmt_sub NEWLINE {
-	fout_diag << "BISON:\tsimple_stmt : small_stmt simple_stmt_sub NEWLINE\n";
-}|
-small_stmt simple_stmt_sub ";" NEWLINE
-;
+	small_stmt simple_stmt_sub NEWLINE {
+		fout_diag << "BISON\tsimple_stmt : small_stmt simple_stmt_sub NEWLINE\n";
+	}|
+	small_stmt simple_stmt_sub ";" NEWLINE
+	;
 
 simple_stmt_sub:
-%empty {
-	$<AST>$ =newnode(0);
-	fout_diag << "BISON:\tsimple_stmt_sub : \n";
-}|
-simple_stmt_sub ";" small_stmt
-;
+	%empty {
+		$<AST>$ =newnode(0);
+		fout_diag << "BISON\tsimple_stmt_sub : \n";
+	}|
+	simple_stmt_sub ";" small_stmt
+	;
 
 sliceop					: ":"
 						| ":" test
@@ -615,33 +585,21 @@ sliceop					: ":"
 small_stmt:
 	expr_stmt {
 		$<AST>$ = $<AST>1;
-		fout_diag << "BISON:\tsmall_stmt : expr_stmt\n";
+		fout_diag << "BISON\tsmall_stmt : expr_stmt\n";
 	}|
-	del_stmt
-	|
 	pass_stmt
 	|
 	flow_stmt {
-		fout_diag << "BISON:\tsmall_stmt : flow_stmt\n";
+		fout_diag << "BISON\tsmall_stmt : flow_stmt\n";
 	};
-	
-star_expr:
-"*" expr
-;
 
 stmt:
-simple_stmt {
-	fout_diag << "BISON:\tstmt : simple_stmt\n";
-}|
-compound_stmt {
-	fout_diag << "BISON:\tstmt : compound_stmt\n";
-};
-
-string_plus:
-STRING
-|
-STRING string_plus
-;
+	simple_stmt {
+		fout_diag << "BISON\tstmt : simple_stmt\n";
+	}|
+	compound_stmt {
+		fout_diag << "BISON\tstmt : compound_stmt\n";
+	};
 
 subscript				: test
 						| ":"
@@ -661,121 +619,103 @@ subscriptlist_sub		: subscript
 						;
 
 suite:
-simple_stmt {
-	fout_diag << "BISON:\tsuite : simple_stmt\n";
-}|
-NEWLINE INDENT suite_sub DEDENT {
-	fout_diag << "BISON:\tsuite : NEWLINE INDENT suite_sub DEDENT\n";
-};
+	simple_stmt {
+		fout_diag << "BISON\tsuite : simple_stmt\n";
+	}|
+	NEWLINE INDENT suite_sub DEDENT {
+		fout_diag << "BISON\tsuite : NEWLINE INDENT suite_sub DEDENT\n";
+	};
 
 suite_sub:
-stmt {
-	fout_diag << "BISON:\tsuite_sub : stmt\n";
-}|
-suite_sub stmt {
-	fout_diag << "BISON:\tsuite_sub : suite_sub stmt\n";
-};
+	stmt {
+		fout_diag << "BISON\tsuite_sub : stmt\n";
+	}|
+	suite_sub stmt {
+		fout_diag << "BISON\tsuite_sub : suite_sub stmt\n";
+	};
 
 term:
-factor {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\tterm : factor\n";
-	dispasn($<AST>$);
-}|
-term "*" factor {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = $<AST>1->Value.Number * $<AST>3->Value.Number;
-	delete $<AST>1;
-	delete $<AST>3;
-	fout_diag << "BISON:\tterm : term \"*\" factor\n";
-	dispasn($<AST>$);
-}|
-term "/" factor {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = $<AST>1->Value.Number / $<AST>3->Value.Number;
-	delete $<AST>1;
-	delete $<AST>3;
-	fout_diag << "BISON:\tterm : term \"/\" factor\n";
-	dispasn($<AST>$);
-}|
-term "%" factor {
-	$<AST>$ = newnode(INT);
-	$<AST>$->Value.Number = int($<AST>1->Value.Number) % int($<AST>3->Value.Number);
-	delete $<AST>1;
-	delete $<AST>3;
-	fout_diag << "BISON:\tterm : term \"%\" factor\n";
-	dispasn($<AST>$);
-}|
-term "//" factor {
-	$<AST>$ = newnode(INT);
-	$<AST>$->Value.Int = int(floor($<AST>1->Value.Number / $<AST>3->Value.Number));
-	delete $<AST>1;
-	delete $<AST>3;
-	fout_diag << "BISON:\tterm : term \"//\" factor\n";
-	dispasn($<AST>$);
-};
+	factor {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\tterm : factor\n";
+		dispasn($<AST>$);
+	}|
+	term "*" factor {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = $<AST>1->Value.Number * $<AST>3->Value.Number;
+		delete $<AST>1;
+		delete $<AST>3;
+		fout_diag << "BISON\tterm : term \"*\" factor\n";
+		dispasn($<AST>$);
+	}|
+	term "/" factor {
+		$<AST>$ = newnode(NUMBER);
+		$<AST>$->Value.Number = $<AST>1->Value.Number / $<AST>3->Value.Number;
+		delete $<AST>1;
+		delete $<AST>3;
+		fout_diag << "BISON\tterm : term \"/\" factor\n";
+		dispasn($<AST>$);
+	}|
+	term "%" factor {
+		$<AST>$ = newnode(INT);
+		$<AST>$->Value.Number = int($<AST>1->Value.Number) % int($<AST>3->Value.Number);
+		delete $<AST>1;
+		delete $<AST>3;
+		fout_diag << "BISON\tterm : term \"%\" factor\n";
+		dispasn($<AST>$);
+	}|
+	term "//" factor {
+		$<AST>$ = newnode(INT);
+		$<AST>$->Value.Int = int(floor($<AST>1->Value.Number / $<AST>3->Value.Number));
+		delete $<AST>1;
+		delete $<AST>3;
+		fout_diag << "BISON\tterm : term \"//\" factor\n";
+		dispasn($<AST>$);
+	};
 
 test:
-or_test {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\ttest : or_test\n";
-	dispasn($<AST>$);
-}|
-or_test "if" or_test "else" test
-;
+	or_test {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\ttest : or_test\n";
+		dispasn($<AST>$);
+	}|
+	or_test "if" or_test "else" test
+	;
 
 testlist:
-testlist_sub {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\ttestlist : test testlist_sub\n";
-	dispasn($<AST>$);
-}|
-testlist_sub ","
-;
+	testlist_sub {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\ttestlist : test testlist_sub\n";
+		dispasn($<AST>$);
+	}|
+	testlist_sub ","
+	;
 
-testlist_comp			: testlist_comp_sub_ts comp_for
-						| testlist_comp_sub_ts testlist_comp_sub_co
-						| testlist_comp_sub_ts testlist_comp_sub_co ","
-						;
-testlist_comp_sub_co	: %empty
-						| testlist_comp_sub_co "," testlist_comp_sub_ts
-						;		
-testlist_comp_sub_ts	: test
-						| star_expr
-						;
-testlist_star_expr		: test dictorsetmaker_lsub
-						| test dictorsetmaker_lsub ","
-						| star_expr dictorsetmaker_lsub
-						| star_expr dictorsetmaker_lsub ","
-						;
 testlist_sub:
-test {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\ttestlist_sub : \n";
-	dispasn($<AST>$);
-}|
-testlist_sub "," test
-;
-
-test_nocond				: or_test
-						;
+	test {
+		$<AST>$ = $<AST>1;
+		fout_diag << "BISON\ttestlist_sub : \n";
+		dispasn($<AST>$);
+	}|
+	testlist_sub "," test
+	;
 
 tfpdef					: NAME 
 						| NAME ":" test
 						;
 
-trailer					: "(" ")"																{fout_diag << "BISON:\ttrailer : \"(\" \")\"\n";}
-						| "(" arglist ")"														{fout_diag << "BISON:\ttrailer : \"(\" arglist \")\"\n"; /*$$ = $2*/}
-						| "[" subscriptlist "]"													{fout_diag << "BISON:\ttrailer : \"[\" subscriptlist \"]\"\n"; /*$$ = $2*/}
-						| "." NAME																{fout_diag << "BISON:\ttrailer : \".\" NAME\n";}
+trailer					: "(" ")"																{fout_diag << "BISON\ttrailer : \"(\" \")\"\n";}
+						| "(" arglist ")"														{fout_diag << "BISON\ttrailer : \"(\" arglist \")\"\n"; /*$$ = $2*/}
+						| "[" subscriptlist "]"													{fout_diag << "BISON\ttrailer : \"[\" subscriptlist \"]\"\n"; /*$$ = $2*/}
+						| "." NAME																{fout_diag << "BISON\ttrailer : \".\" NAME\n";}
 						;
 
 trailer_plus:
-trailer
-|
-trailer_plus trailer {
-	fout_diag << "BISON:\ttrailer_star : trailer_star trailer\n";
-};
+	trailer
+	|
+	trailer_plus trailer {
+		fout_diag << "BISON\ttrailer_star : trailer_star trailer\n";
+	};
 
 typedargslist			: tfpdef  typedargslist_ct typedargslist_long
 						| tfpdef "=" test typedargslist_ct typedargslist_long
@@ -803,39 +743,17 @@ typedargslist_sub		: %empty
 						| "**" tfpdef
 						| "**" tfpdef ","
 						;
-varargslist				: NAME "=" test varargslist_another_sub
-						| NAME varargslist_another_sub
-						| "*" varargslist_sub_sub_sub
-						| "**" NAME
-						| "**" NAME ","
-						;
-varargslist_another_sub	: varargslist_sub
-						| varargslist_sub ","
-						| varargslist_sub "," "*" varargslist_sub_sub_sub
-						| varargslist_sub "," "**" NAME
-						| varargslist_sub "," "**" NAME ","
-						;
-varargslist_sub			: %empty
-						| varargslist_sub "," NAME
-						| varargslist_sub "," NAME "=" test
-						;
-varargslist_sub_sub		: varargslist_sub
-						| varargslist_sub ","
-						| varargslist_sub "," "**" NAME
-						| varargslist_sub "," "**" NAME ","
-						;
-varargslist_sub_sub_sub	: varargslist_sub_sub
-						| NAME varargslist_sub_sub
-						;
 						
-while_stmt				: "while" test ":" suite
-						| "while" test ":" suite "else" ":" suite
-						;
+while_stmt:
+"while" test ":" suite
+|
+"while" test ":" suite "else" ":" suite
+;
 
 xor_expr:
 and_expr {
 	$<AST>$ = $<AST>1;
-	fout_diag << "BISON:\txor_expr : and_expr\n";
+	fout_diag << "BISON\txor_expr : and_expr\n";
 	dispasn($<AST>$);
 }|
 xor_expr "^" and_expr {
@@ -843,7 +761,7 @@ xor_expr "^" and_expr {
 	$<AST>$->Value.Number = int($<AST>1->Value.Number) ^ int ($<AST>3->Value.Number);
 	delete $<AST>1;
 	delete $<AST>3;
-	fout_diag << "BISON:\txor_expr : xor_expr \"^\" and_expr\n";
+	fout_diag << "BISON\txor_expr : xor_expr \"^\" and_expr\n";
 	dispasn($<AST>$);
 };
 %%
@@ -998,43 +916,43 @@ int yylex() {
 	switch (T->t[i].type) {
 		case STRING:{
 			yylval.String = T->t[i].Object.Value.String;
-			fout_diag << "FLEX:\tSTRING\t" << yylval.String << endl;
+			fout_diag << "FLEX\tSTRING\t" << yylval.String << endl;
 			break;
 		}
 		case NUMBER:{
 			yylval.Number = T->t[i].Object.Value.Number;
-			fout_diag << "FLEX:\tNUMBER\t" << yylval.Number << endl;
+			fout_diag << "FLEX\tNUMBER\t" << yylval.Number << endl;
 			break;
 		}
 		case CHAR:{
 			yylval.Char = T->t[i].Object.Value.Char;
-			fout_diag << "FLEX:\tCHAR\t" << yylval.Char << endl;
+			fout_diag << "FLEX\tCHAR\t" << yylval.Char << endl;
 			break;
 		}
 		case NAME:{
 			yylval.Name = T->t[i].Object.Value.String;
-			fout_diag << "FLEX:\tNAME\t" << yylval.Name << endl;
+			fout_diag << "FLEX\tNAME\t" << yylval.Name << endl;
 			break;
 		}
 		case INDENT:{
-			fout_diag << "FLEX:\tINDENT" << endl;
+			fout_diag << "FLEX\tINDENT" << endl;
 			break;
 		}
 		case DEDENT:{
-			fout_diag << "FLEX:\tDEDENT" << endl;
+			fout_diag << "FLEX\tDEDENT" << endl;
 			break;
 		}
 		case NEWLINE:{
-			fout_diag << "FLEX:\tNEWLINE" << endl;
+			fout_diag << "FLEX\tNEWLINE" << endl;
 			break;
 		}
 		case ENDMARKER:{
-			fout_diag << "FLEX:\tENDMARKER" << endl;
+			fout_diag << "FLEX\tENDMARKER" << endl;
 			break;
 		}
 		default:{
 			yylval.Name = T->t[i].Object.Value.String;
-			fout_diag << "FLEX:\t" << yylval.Name << endl;
+			fout_diag << "FLEX\t" << yylval.Name << endl;
 			break;
 		}
 	}
@@ -1047,30 +965,30 @@ void yyerror(char *s) {
 void dispasn(ast N) {
 	switch (N->nodetype){
 		case NUMBER:{
-			fout_diag << "SVAL:\t" << N->Value.Number << "\n";
+			fout_diag << "SVAL\t" << N->Value.Number << "\n";
 			break;
 		}
 		case INT:{
-			fout_diag << "SVAL:\t" << N->Value.Int << "\n";
+			fout_diag << "SVAL\t" << N->Value.Int << "\n";
 			break;
 		}
 		case BOOL:{
 			if (N->Value.Bool)
-				fout_diag << "SVAL:\t" << "true" << "\n";
+				fout_diag << "SVAL\t" << "true" << "\n";
 			else
-				fout_diag << "SVAL:\t" << "false" << "\n";
+				fout_diag << "SVAL\t" << "false" << "\n";
 			break;
 		}
 		case CHAR:{
-			fout_diag << "SVAL:\t" << N->Value.Char << "\n";
+			fout_diag << "SVAL\t" << N->Value.Char << "\n";
 			break;
 		}
 		case STRING:{
-			fout_diag << "SVAL:\t" << N->Value.String << "\n";
+			fout_diag << "SVAL\t" << N->Value.String << "\n";
 			break;
 		}
 		case NAME:{
-			fout_diag << "SVAL:\t" << N->Value.Name << "\n";
+			fout_diag << "SVAL\t" << N->Value.Name << "\n";
 			break;
 		}
 		default:
