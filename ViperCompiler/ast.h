@@ -2,12 +2,16 @@ class asn {
 public:
 	int nodetype;
 	bool valuenode;
+	char * symbol;
+	int valuetype;
 	asn * jump;
 	asn * l;
 	asn * r;
 	SValue Value;
 	asn() {
+		symbol = 0;
 		nodetype = 0;
+		valuetype = 0;
 		valuenode = false;
 		l = 0;
 		r = 0;
@@ -24,6 +28,3 @@ ast newast(int nodetype, ast l, ast r) {
 	return N;
 };
 ast ROOT = 0;
-void dispasn(ast N);//定义在y文件末
-ast newnode(int nodetype);
-ast interpret(ast N);

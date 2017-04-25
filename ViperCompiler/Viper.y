@@ -1,6 +1,19 @@
 %{
+#include "iostream"
+#include "ctype.h"
+#include "malloc.h"
+#include "fstream"
+#include "math.h"
+#include "string.h"
+
 using namespace std;
+ofstream fout_diag("PARSER.log", ios::out);
+const int TOKEN_TABLE_SIZE = 4096;
 const int INPUT = 12345;
+const int STMT = 12346;
+const int FINPUT = 12346;
+
+
 typedef union {
 	double Number;
 	char * String;
@@ -9,10 +22,45 @@ typedef union {
 	bool Bool;
 	int Int;
 } SValue;
-#include "fstream"
-const int TOKEN_TABLE_SIZE = 4096;
-ofstream fout_diag("PARSER.log", ios::out);
-#include "stdafx.h"
+
+class _Object {
+public:
+	union {
+	double Number;
+	char * String;
+	char Char;
+	} Value;
+	_Object(){
+		Value.Number = 0;
+		Value.String = 0;
+		Value.Char = 0;
+	};
+};
+class Token {
+public:
+	int lineno;
+	int type;
+	int layer;
+	int availability;
+	_Object Object;
+	Token(){
+		layer = 0;
+		availability = 0;
+		lineno = 0;
+		type = 0;
+	};
+};
+class TokenTable {
+public:
+	int Pointer;
+	int Size;
+	Token * t;
+	TokenTable() {
+		Size = 0;
+		t = new Token[TOKEN_TABLE_SIZE];
+		Pointer = 0;
+	}
+};
 TokenTable * T = new TokenTable;
 #include "ast.h"
 #include "symtable.h"
@@ -25,7 +73,30 @@ union YYSTYPE{
 	char Char;
 	bool Bool;
 };
+int yylex();
+int ReadTokens(ifstream &f, TokenTable * T);
+void PrintTokens(TokenTable * T);
+void yyerror(char *s);
 char * inttype(int type);
+void dispasn(ast N);
+ast newnode(char * symbol, int nodetype, int valuetype = 0);
+SymTable addEntry(char * SYMNAME, int BEGIN, int END, int TYPE, SValue VALUE);//Definitions after main
+void disptable();
+SymTable searchTable(char * NAME);
+SymTable initTable();
+void interpret_input();
+void interpret_stmt(ast N);
+void interpret_expr_stmt(ast N);
+void interpret_expr(ast N);
+void interpret_xor_expr(ast N);
+void interpret_and_expr(ast N);
+void interpret_shift_expr(ast N);
+void interpret_arith_expr(ast N);
+void interpret_term(ast N);
+void interpret_factor(ast N);
+void interpret_power(ast N);
+void interpret_atom_expr(ast N);
+#include "stack.h"
 %}
 %define api.value.type		{union YYSTYPE}
 %token	<Number>			NUMBER
@@ -38,6 +109,8 @@ char * inttype(int type);
 %token	DEDENT
 %token	ENDMARKER
 %token	UNKNOWN
+%token	TRUE				"True"
+%token	FALSE				"False"
 %token	ELLIPSIS			"..."
 %token	LBRACE				"}"
 %token	RBRACE				"{"
@@ -109,7 +182,7 @@ char * inttype(int type);
 %%
 input:
 	file_input ENDMARKER {
-		$<AST>$ = newnode(INPUT);
+		$<AST>$ = newnode("input", 1, 0);
 		$<AST>$->l = $<AST>1;
 		ROOT = $<AST>$;
 		fout_diag << "BISON\tinput : file_input ENDMARKER\n";
@@ -122,12 +195,10 @@ and_expr:
 		dispasn($<AST>$);
 	}|
 	and_expr "&" shift_expr {
-		$<AST>$ = newnode(NUMBER);
-		$<AST>$->Value.Number = int($<AST>1->Value.Number) & int($<AST>3->Value.Number);
-		delete $<AST>1;
-		delete $<AST>3;
+		$<AST>$ = newnode("and_expr", 2);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tand_expr : and_expr \"&\" shift_expr\n";
-		dispasn($<AST>$);
 	};
 
 and_test:
@@ -137,11 +208,11 @@ and_test:
 		dispasn($<AST>$);
 	}|
 	and_test "and" not_test {
-		$<AST>$ = newnode(BOOL);
-		$<AST>$->Value.Bool = $<AST>1->Value.Bool && $<AST>3->Value.Bool;
+		$<AST>$ = newnode("and_test", 2);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tand_test : and_test \"and\" not_test\n";
-		dispasn($<AST>$);
-	};
+		};
 
 arglist					: arglist_sub
 						| arglist_sub ","
@@ -167,45 +238,51 @@ arith_expr:
 		dispasn($<AST>$);
 	}|
 	arith_expr "+" term {
-		$<AST>$ = newnode(NUMBER);
-		$<AST>$->Value.Number = $<AST>1->Value.Number + $<AST>3->Value.Number;
-		delete $<AST>1;
-		delete $<AST>3;
+		$<AST>$ = newnode("arith_expr", 2);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tarith_expr : arith_expr \"+\" term\n";
-		dispasn($<AST>$);
 	}|
 	arith_expr "-" term {
-		$<AST>$ = newnode(NUMBER);
-		$<AST>$->Value.Number = $<AST>1->Value.Number - $<AST>3->Value.Number;
-		delete $<AST>1;
-		delete $<AST>3;
+		$<AST>$ = newnode("arith_expr", 3);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tarith_expr : arith_expr \"-\" term\n";
-		dispasn($<AST>$);
 	};
 
 atom:
 	"True" {
+		$<AST>$ = newnode("atom", 1, BOOL);
+		$<AST>$->nodetype = BOOL;
 		$<AST>$->Value.Bool = true;
 		dispasn($<AST>$);
 	}|
 	"False" {
+		$<AST>$ = newnode("atom", 2, BOOL);
+		$<AST>$->nodetype = BOOL;
 		$<AST>$->Value.Bool = false;
 		dispasn($<AST>$);
 	}|
 	NAME {
-		$<AST>$ = newnode(NAME);
+		$<AST>$ = newnode("atom", 3, NAME);
 		$<AST>$->Value.Name = $<Name>1;
 		fout_diag << "BISON\tatom : NAME\n";
 		dispasn($<AST>$);
 	}|
 	STRING {
-		$<AST>$ = newnode(STRING);
+		$<AST>$ = newnode("atom", 4, STRING);
 		$<AST>$->Value.String = $<String>1;
 		fout_diag << "BISON\tatom : STRING\n";
 		dispasn($<AST>$);
 	}|
+	CHAR {
+		$<AST>$ = newnode("atom", 5, CHAR);
+		$<AST>$->Value.Char = $<Char>1;
+		fout_diag << "BISON\tatom : NUMBER\n";
+		dispasn($<AST>$);
+	}|
 	NUMBER {
-		$<AST>$ = newnode(NUMBER);
+		$<AST>$ = newnode("atom", 6, NUMBER);
 		$<AST>$->Value.Number = $<Number>1;
 		fout_diag << "BISON\tatom : NUMBER\n";
 		dispasn($<AST>$);
@@ -213,10 +290,9 @@ atom:
 
 atom_expr:
 	atom {
-		//如果NAME被规约成这个，它就应该应该提供值而不是其他
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("atom_expr", 1);
+		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tatom_expr : atom\n";
-		dispasn($<AST>$);
 	}|
 	atom trailer_plus {
 		fout_diag << "BISON\tatom_expr : atom trailer_plus\n";		
@@ -224,7 +300,7 @@ atom_expr:
 
 break_stmt:
 	"break" {
-		$<AST>$ = newnode(BREAK);
+		$<AST>$ = newnode("break_stmt", BREAK);
 	};
 
 classdef:
@@ -243,63 +319,10 @@ comparison:
 		dispasn($<AST>$);
 	}|
 	comparison comp_op expr {
-		$<AST>$ = newnode(NUMBER);
-		switch (int($<AST>2->Value.Number)) {
-			case LESS: {
-				if ($<AST>1->Value.Number < $<AST>3->Value.Number)
-					$<AST>$->Value.Number = 1;
-				else
-					$<AST>$->Value.Bool = 0;
-				break;
-			}
-			case GREATER: {
-				if ($<AST>1->Value.Number > $<AST>3->Value.Number)
-					$<AST>$->Value.Number = 1;
-				else
-					$<AST>$->Value.Number = 0;
-				break;
-			}
-			case EQEQUAL: {
-				if ($<AST>1->Value.Number == $<AST>3->Value.Number)
-					$<AST>$->Value.Number = 1;
-				else
-					$<AST>$->Value.Number = 0;
-				break;
-			}
-			case GREATEREQUAL: {
-				if ($<AST>1->Value.Number >= $<AST>3->Value.Number)
-					$<AST>$->Value.Number = 1;
-				else
-					$<AST>$->Value.Number = 0;
-				break;
-			}
-			case LESSEQUAL: {
-				if ($<AST>1->Value.Number <= $<AST>3->Value.Number)
-					$<AST>$->Value.Number = 1;
-				else
-					$<AST>$->Value.Number = 0;
-				break;
-			}
-			case NOTEQUAL: {
-				if ($<AST>1->Value.Number != $<AST>3->Value.Number)
-					$<AST>$->Value.Number = 1;
-				else
-					$<AST>$->Value.Number = 0;
-				break;
-			}
-			case IS: {
-				/*解释运行树的时候再说吧*/
-				break;
-			}
-			default: {
-				break;
-			}
-		}
+		$<AST>$ = newnode("comparison", 2);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tcomparison : comparison comp_op expr\n";
-		delete $<AST>1;
-		delete $<AST>2;
-		delete $<AST>3;
-		dispasn($<AST>$);
 	};
 
 compound_stmt:
@@ -322,47 +345,47 @@ compound_stmt:
 
 comp_op:
 	"<" {
-		$<AST>$ = newnode(NUMBER);
+		$<AST>$ = newnode("comp_op", NUMBER);
 		$<AST>$->Value.Number = LESS;
 		fout_diag << "BISON\tcomp_op : \"<\"\n";
 	}|
 	">" {
-		$<AST>$ = newnode(NUMBER);
+		$<AST>$ = newnode("comp_op", NUMBER);
 		$<AST>$->Value.Number = GREATER;
 		fout_diag << "BISON\tcomp_op : \">\"\n";
 	}|
 	"==" {
-		$<AST>$ = newnode(NUMBER);
+		$<AST>$ = newnode("comp_op", NUMBER);
 		$<AST>$->Value.Number = EQEQUAL;
 		fout_diag << "BISON\tcomp_op : \"==\"\n";
 	}|
 	">=" {
-		$<AST>$ = newnode(NUMBER);
+		$<AST>$ = newnode("comp_op", NUMBER);
 		$<AST>$->Value.Number = GREATEREQUAL;
 		fout_diag << "BISON\tcomp_op : \">=\"\n";
 	}|
 	"<=" {
-		$<AST>$ = newnode(NUMBER);
+		$<AST>$ = newnode("comp_op", NUMBER);
 		$<AST>$->Value.Number = LESSEQUAL;
 		fout_diag << "BISON\tcomp_op : \"<=\"\n";
 	}|
 	"<>" {
-		$<AST>$ = newnode(NUMBER);
+		$<AST>$ = newnode("comp_op", NUMBER);
 		$<AST>$->Value.Number = NOTEQUAL;
 		fout_diag << "BISON\tcomp_op : \"<>\"\n";
 	}|
 	"!=" {
-		$<AST>$ = newnode(NUMBER);
+		$<AST>$ = newnode("comp_op", NUMBER);
 		$<AST>$->Value.Number = NOTEQUAL;
 		fout_diag << "BISON\tcomp_op : \"!=\"\n";
 	}|
 	"is" {
-		$<AST>$ = newnode(NUMBER);
+		$<AST>$ = newnode("comp_op", NUMBER);
 		$<AST>$->Value.Number = IS;
 		fout_diag << "BISON\tcomp_op : \"is\"\n";
 	}|
 	"is" "not" {
-		$<AST>$ = newnode(NUMBER);
+		$<AST>$ = newnode("comp_op", NUMBER);
 		$<AST>$->Value.Number = -2;
 		fout_diag << "BISON\tcomp_op : \"is\" \"not\"\n";
 	};
@@ -377,18 +400,16 @@ expr:
 		dispasn($<AST>$);
 	}|
 	expr "|" xor_expr {
-		$<AST>$ = newnode(NUMBER);
-		$<AST>$->Value.Number = int($<AST>1->Value.Number) | int($<AST>3->Value.Number);
-		delete $<AST>1;
-		delete $<AST>3;
+		$<AST>$ = newnode("expr", 2);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\texpr : expr \"|\" xor_expr\n";
-		dispasn($<AST>$);
 	};
 
 expr_stmt:
 	NAME "=" expr {
-		$<AST>$ = newnode(EQUAL);
-		$<AST>$->l = newnode(NAME);
+		$<AST>$ = newnode("expr_stmt", 1);
+		$<AST>$->l = newnode("NAME", NAME);//???????
 		$<AST>$->l->Value.Name = $<Name>1;
 		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\texpr_stmt : NAME \'=' expr\n";
@@ -397,56 +418,57 @@ expr_stmt:
 
 factor:
 	power {
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("factor", 1);
+		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tfactor : power\n";
 		dispasn($<AST>$);
 	}|
 	"+" factor {
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("factor", 2);
+		$<AST>$->l = $<AST>2;
 		fout_diag << "BISON\tfactor : \"+\" factor\n";
 		dispasn($<AST>$);
 	}|
 	"-" factor{
-		$<AST>$ = $<AST>1;
-		$<AST>$->Value.Number = -1.0 * $<AST>$->Value.Number;
+		$<AST>$ = newnode("factor", 3);
+		$<AST>$->l = $<AST>2;
 		fout_diag << "BISON\tfactor : \"-\" factor\n";
 		dispasn($<AST>$);
 	};
 
 file_input:
 	NEWLINE {
-		$<AST>$ = newnode(0);
+		$<AST>$ = newnode("file_input", 1);
+		$<AST>$->r = newnode("NEWLINE", NEWLINE);
 		fout_diag << "BISON\tfile_input : NEWLINE\n";
 		
 	}|
 	stmt {
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("file_input", 2);
+		$<AST>$->r = $<AST>1;
 		fout_diag << "BISON\tfile_input : stmt\n";
 	}|
 	file_input NEWLINE {
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("file_input", 3);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = newnode("NEWLINE", NEWLINE);
 		fout_diag << "BISON\tfile_input : file_input_sub NEWLINE\n";
 	}|
 	file_input stmt {
-		$<AST>$ = $<AST>1;
-		asn * A = $<AST>1;
-		while (A->next)
-			A = A->next;
-		A->next = $<AST>2;//最右面的
+		$<AST>$ = newnode("file_input", 4);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>2;
 		fout_diag << "BISON\tfile_input : file_input_sub stmt\n";
 	};
 
 flow_stmt:
 	break_stmt {
-		$<AST>$ = newnode(BREAK);
 		fout_diag << "BISON\tflow_stmt : break_stmt\n";
 	}|
 	continue_stmt {
-		$<AST>$ = newnode(CONTINUE);
 		fout_diag << "BISON\tflow_stmt : continue_stmt\n";
 	}|
 	return_stmt {
-		$<AST>$ = newnode(RETURN);
 		fout_diag << "BISON\tflow_stmt : return_stmt\n";
 	};
 
@@ -458,58 +480,25 @@ funcdef:
 
 if_stmt:
 	"if" test ":" suite if_stmt_sub {
-		$<AST>$ = newnode(IF);
-		$<AST>$->Value.Bool = $<AST>2->Value.Bool;
-		$<AST>$->l = $<AST>4;
-		$<AST>4->l = $<AST>5;
-		delete $<AST>2;
 	}|
 	"if" test ":" suite if_stmt_sub "else" ":" suite {
-		$<AST>$ = newnode(IF);
-		$<AST>$->Value.Bool = $<AST>2->Value.Bool;
-		$<AST>$->l = $<AST>4;
-		$<AST>$->r = $<AST>8;
-		$<AST>4->l = $<AST>5;
-		delete $<AST>2;
 	};
 
 if_stmt_sub:
 	%empty {
-		$<AST>$ = newnode(0);
+		$<AST>$ = newnode("NULL", 0);
 	}|
 	if_stmt_sub "elif" test ":" suite {
-		$<AST>$ = newnode(ELIF);
-		$<AST>$->Value.Bool = $<AST>3->Value.Bool;
-		if (!$<AST>1->nodetype)
-			$<AST>$->l = $<AST>5;
-		else {
-			ast T = $<AST>1;
-			while (T->l)
-				T = T->l;
-			T->l = $<AST>5;
-		}
-		delete $<AST>3;
 	};
 
 not_test:
 	"not" not_test {
-		$<AST>$ = newnode(BOOL);
-		if (!$<AST>1->Value.Number)
-			$<AST>$->Value.Bool = true;
-		else
-			$<AST>$->Value.Bool = false;
-		delete $<AST>1;
-		delete $<AST>2;
+		$<AST>$ = newnode("not_test", 1);
+		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tnot_test : \"not\" not_test\n";
-		delete $<AST>2;
-		dispasn($<AST>$);
 	}|
 	comparison {
-		$<AST>$ = newnode(BOOL);
-		if ($<AST>1->Value.Number)
-			$<AST>$->Value.Bool = true;
-		else
-			$<AST>$->Value.Bool = false;
+		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\tnot_test : comparison\n";
 		dispasn($<AST>$);
 	};
@@ -521,12 +510,10 @@ or_test:
 		dispasn($<AST>$);
 	}|
 	or_test "or" and_test {
-		$<AST>$ = newnode(BOOL);
-		$<AST>$->Value.Bool = $<AST>1->Value.Bool || $<AST>3->Value.Bool;
+		$<AST>$ = newnode("or_test", 2);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tor_test : or_test \"or\" and_test\n";
-		delete $<AST>1;
-		delete $<AST>3;
-		dispasn($<AST>$);
 	};
 
 parameters				: "(" ")"																{fout_diag << "BISON\tparameters : \"(\" \")\"\n";}
@@ -539,17 +526,15 @@ pass_stmt:
 
 power:
 	atom_expr {
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("power", 1);
+		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tpower : atom_expr" << "\n";
-		dispasn($<AST>$);
 	}|
 	atom_expr "**" factor {
-		$<AST>$ = newnode(NUMBER);
-		$<AST>$->Value.Number = pow($<AST>1->Value.Number, $<AST>3->Value.Number);
-		delete $<AST>1;
-		delete $<AST>3;
+		$<AST>$ = newnode("power", 2);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tpower : atom_expr \"**\" factor" << "\n";
-		dispasn($<AST>$);
 	};
 
 return_stmt:
@@ -567,20 +552,16 @@ shift_expr:
 		dispasn($<AST>$);
 	}|
 	shift_expr "<<" arith_expr {
-		$<AST>$ = newnode(NUMBER);
-		$<AST>$->Value.Number = $<AST>1->Value.Number * pow(2, int($<AST>3->Value.Number));
-		delete $<AST>1;
-		delete $<AST>3;
+		$<AST>$ = newnode("shift_expr", 2);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tshift_expr : shift_expr \"<<\" arith_expr\n";
-		dispasn($<AST>$);
 	}|
 	shift_expr ">>" arith_expr {
-		$<AST>$ = newnode(NUMBER);
-		$<AST>$->Value.Number = $<AST>1->Value.Number / pow(2, int($<AST>3->Value.Number));
-		delete $<AST>1;
-		delete $<AST>3;
+		$<AST>$ = newnode("shift_expr", 3);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tshift_expr : shift_expr \">>\" arith_expr\n";
-		dispasn($<AST>$);
 	};
 
 simple_stmt:
@@ -598,7 +579,6 @@ small_stmt:
 		fout_diag << "BISON\tsmall_stmt : expr_stmt\n";
 	}|
 	pass_stmt {
-		$<AST>$ = newnode(0);
 		fout_diag << "BISON\tsmall_stmt : pass_stmt\n";
 	}|
 	flow_stmt {
@@ -607,11 +587,13 @@ small_stmt:
 
 stmt:
 	simple_stmt {
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("stmt", 1);
+		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tstmt : simple_stmt\n";
 	}|
 	compound_stmt {
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("stmt", 2);
+		$<AST>$->r = $<AST>1;
 		fout_diag << "BISON\tstmt : compound_stmt\n";
 	};
 
@@ -655,36 +637,28 @@ term:
 		dispasn($<AST>$);
 	}|
 	term "*" factor {
-		$<AST>$ = newnode(NUMBER);
-		$<AST>$->Value.Number = $<AST>1->Value.Number * $<AST>3->Value.Number;
-		delete $<AST>1;
-		delete $<AST>3;
+		$<AST>$ = newnode("term", 2);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->l = $<AST>3;
 		fout_diag << "BISON\tterm : term \"*\" factor\n";
-		dispasn($<AST>$);
 	}|
 	term "/" factor {
-		$<AST>$ = newnode(NUMBER);
-		$<AST>$->Value.Number = $<AST>1->Value.Number / $<AST>3->Value.Number;
-		delete $<AST>1;
-		delete $<AST>3;
+		$<AST>$ = newnode("term", 3);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->l = $<AST>3;
 		fout_diag << "BISON\tterm : term \"/\" factor\n";
-		dispasn($<AST>$);
 	}|
 	term "%" factor {
-		$<AST>$ = newnode(INT);
-		$<AST>$->Value.Number = int($<AST>1->Value.Number) % int($<AST>3->Value.Number);
-		delete $<AST>1;
-		delete $<AST>3;
+		$<AST>$ = newnode("term", 4);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->l = $<AST>3;
 		fout_diag << "BISON\tterm : term \"%\" factor\n";
-		dispasn($<AST>$);
 	}|
 	term "//" factor {
-		$<AST>$ = newnode(INT);
-		$<AST>$->Value.Int = int(floor($<AST>1->Value.Number / $<AST>3->Value.Number));
-		delete $<AST>1;
-		delete $<AST>3;
+		$<AST>$ = newnode("term", 5);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->l = $<AST>3;
 		fout_diag << "BISON\tterm : term \"//\" factor\n";
-		dispasn($<AST>$);
 	};
 
 test:
@@ -750,12 +724,10 @@ and_expr {
 	dispasn($<AST>$);
 }|
 xor_expr "^" and_expr {
-	$<AST>$ = newnode(NUMBER);
-	$<AST>$->Value.Number = int($<AST>1->Value.Number) ^ int ($<AST>3->Value.Number);
-	delete $<AST>1;
-	delete $<AST>3;
+	$<AST>$ = newnode("xor_expr", 2);
+	$<AST>$->l = $<AST>1;
+	$<AST>$->r = $<AST>3;
 	fout_diag << "BISON\txor_expr : xor_expr \"^\" and_expr\n";
-	dispasn($<AST>$);
 };
 %%
 
@@ -776,7 +748,7 @@ int main(int argc, char * argv[]) {
 	fout_diag << "\n" << "PARSING PROCESS SUCCESS" << "\n";
 	fout_diag.close();
 	fout_diag.open("INTERPRETER.log", ios::out);
-	interpret(ROOT);
+	interpret_input();
 	disptable();
 	fout_diag << "\n" << "INTERPRETING PROCESS SUCCESS" << "\n";
 	fout_diag.close();
@@ -994,9 +966,12 @@ void dispasn(ast N) {
 			break;
 	}
 };
-ast newnode(int nodetype) {
+ast newnode(char * symbol, int nodetype, int valuetype) {
 	ast N = new asn;
 	N->nodetype = nodetype;
+	N->valuetype = valuetype;
+	N->symbol = new char[128];
+	strcpy(N->symbol, symbol);
 	if (nodetype == NUMBER || nodetype == BOOL || nodetype == NAME || nodetype == INT || nodetype == CHAR || nodetype == STRING)
 		N->valuenode = true;
 	return N;
@@ -1011,73 +986,35 @@ SymTable addEntry(char * SYMNAME, int BEGIN, int END, int TYPE) {
 	SYMTABLE = T;
 	return T;
 };
-ast interpret(ast N) {
-	if (N == ROOT) {
-		fout_diag << "INTERPRETING ROOT NODE" << "\n";
-		if (N->l == 0) {
-			fout_diag << "SOURCE FILE EMPTY" << "\n";
-			return 0;//CAN DO ABSOLUTELY NOTHING
-		}
-		if (N->l && N->l->nodetype == 0) {
-			fout_diag << "SOURCE FILE EMPTY" << "\n";
-			return 0;//CAN DO ABSOLUTELY NOTHING
-		}
-		fout_diag << "NOT AN EMPTY SOURCE FILE" << "\n" << "\n" << "\n";
-		fout_diag << "TYPE OF NODE ROOT->L" << "\t" << inttype(N->l->nodetype) << "\n";
-		N = N->l;
+void interpret_input() {
+	ast N = ROOT;
+	if (strcmp(N->symbol, "input")){
+		fout_diag << "this is not a input node" << "\n";
+		return;
 	}
-	switch (N->nodetype) {
-		case EQUAL:{
-			fout_diag << "ENTERING A NODE TYPE OF EQUAL" << "\n";
-			fout_diag << "TYPE OF NODE N->L" << "\t" << inttype(N->l->nodetype) << "\n";
-			fout_diag << "TYPE OF NODE N->R" << "\t" << inttype(N->r->nodetype) << "\n";
-			if (N->l->nodetype == NAME && N->l->valuenode && N->r->nodetype && N->r->valuenode){
-				fout_diag << "SEARCHING FOR A NAME IN THE TABLE:\t" << N->l->Value.Name << "\n";
-				SymTable S = searchTable(N->l->Value.Name);
-				if (!S){
-					fout_diag << "NOT FOUND IN THE TABLE" << "\n";
-					S = addEntry(N->l->Value.Name, -1, -1, N->r->nodetype);
-					fout_diag << "SYMBOL TABLE\tNEW SYMBOL\t" << S->NAME << "\n";
-				}
-				if (S && S->TYPE != 0 && S->TYPE != N->r->nodetype) {
-					fout_diag << "incompatible variable value" << "\n";
-					return 0;
-				}
-				switch (N->r->nodetype) {
-					case NUMBER:{
-						S->VALUE.Number = N->r->Value.Number;
-						break;
-					};
-					case INT:{
-						S->VALUE.Int = N->r->Value.Int;
-						break;
-					};
-					case CHAR:{
-						S->VALUE.Char = N->r->Value.Char;
-						break;
-					};
-					case STRING:{
-						S->VALUE.String = N->r->Value.String;
-						break;
-					};
-					case NAME:{
-						SymTable s = searchTable(N->r->Value.Name);
-						if (!s){
-							fout_diag << "a non-existed variable cannot be on the right side of a expr_stmt" << "\n";
-							return 0;
-						}
-						S->LIMITS[0] = s->LIMITS[0];
-						S->LIMITS[1] = s->LIMITS[1];
-						S->VALUE.Number = s->VALUE.Number;
-						S->VALUE.Int = s->VALUE.Int;
-						break;
-					};
-				}
+	while (N){
+		if (N->r && !strcmp(N->r->symbol, "stmt")){
+			fout_diag << "FOUND A stmt NODE AND PUSHED IT INTO THE STACK" << "\n";
+			STACK.PushStack(N->r);
+		}
+		if (N->l){
+			if (!strcmp(N->l->symbol, "file_input")){//如果是file_input
+				fout_diag << "WENT INTO A file_input NODE" << "\n";
+				N = N->l;
 			}
-			break;
+			else {
+				if (!strcmp(N->r->symbol, "stmt")){
+					fout_diag << "FOUND A stmt NODE AND PUSHED IT INTO THE STACK" << "\n";
+					STACK.PushStack(N->r);
+				}
+				fout_diag << "NO file_input NODES ANYMORE" << "\n";
+				break;
+			}
 		}
+		else 
+			break;
 	}
-	return 0;
+	STACK.ClearStack();
 }
 char * inttype(int type){
 	switch (type) {
@@ -1117,9 +1054,27 @@ char * inttype(int type){
 			return R;
 			break;
 		}
+		case BOOL:{
+			char * R = new char[32];
+			strcpy(R, "BOOL");
+			return R;
+			break;
+		}
+		case FINPUT:{
+			char * R = new char[32];
+			strcpy(R, "FINPUT");
+			return R;
+			break;
+		}
 		case 0:{
 			char * R = new char[32];
 			strcpy(R, "NULL");
+			return R;
+			break;
+		}
+		default:{
+			char * R = new char[32];
+			strcpy(R, "UNKNOWN");
 			return R;
 			break;
 		}
@@ -1149,8 +1104,149 @@ void disptable(){
 					fout_diag << S->VALUE.Char << "\n";
 					break;
 				}
+				case BOOL:{
+					fout_diag << S->VALUE.Bool << "\n";
+					break;
+				}
 			}
 		}
 		S = S->NEXT;
+	}
+};
+void interpret_stmt(ast N){
+	if (strcmp(N->symbol, "stmt")){
+		fout_diag << "this is not a stmt node" << "\n";
+		return;
+	}
+	fout_diag << "pretending to interpret a stmt" << "\n";
+	if (N->l && !N->r){//simple_stmt
+		fout_diag << "pretending to interpret a simple_stmt" << "\n";
+		N = N->l;
+		fout_diag << "entered a node with type" << "\t" << inttype(N->nodetype) << "\n";
+		switch(N->nodetype){
+			case EQUAL:{
+				interpret_expr_stmt(N);
+				break;
+			}
+		}
+	}
+	if (N->r && !N->l){//compound_stmt
+		fout_diag << "pretending to interpret a compound_stmt" << "\n";
+	}
+};
+void interpret_expr_stmt(ast N){
+	if (strcmp(N->symbol, "expr_stmt")){
+		fout_diag << "this is not a expr_stmt node" << "\n";
+		return;
+	}
+	fout_diag << "pretending to interpret a expr_stmt" << "\n";
+	interpret_expr(N->r);
+};
+void interpret_expr(ast N) {
+	if (strcmp(N->symbol, "expr")){
+		fout_diag << "this is not a expr node" << "\n";
+		return;
+	}
+	fout_diag << "pretending to interpret a expr" << "\n";
+};
+void interpret_xor_expr(ast N) {
+	if (strcmp(N->symbol, "xor_expr")){
+		fout_diag << "this is not a xor_expr node" << "\n";
+		return;
+	}
+	fout_diag << "pretending to interpret a xor_expr" << "\n";
+};
+void interpret_and_expr(ast N) {
+	if (strcmp(N->symbol, "and_expr")){
+		fout_diag << "this is not a and_expr node" << "\n";
+		return;
+	}
+	fout_diag << "pretending to interpret a and_expr" << "\n";
+};
+void interpret_shift_expr(ast N) {
+	if (strcmp(N->symbol, "and_expr")){
+		fout_diag << "this is not a and_expr node" << "\n";
+		return;
+	}
+	fout_diag << "pretending to interpret a shift_expr" << "\n";
+};
+void interpret_arith_expr(ast N) {
+	if (strcmp(N->symbol, "arith_expr")){
+		fout_diag << "this is not a arith_expr node" << "\n";
+		return;
+	}
+	fout_diag << "pretending to interpret a arith_expr" << "\n";
+};
+void interpret_term(ast N) {
+	if (strcmp(N->symbol, "term")){
+		fout_diag << "this is not a term node" << "\n";
+		return;
+	}
+	fout_diag << "pretending to interpret a term" << "\n";
+};
+void interpret_factor(ast N) {
+	if (strcmp(N->symbol, "factor")){
+		fout_diag << "this is not a factor node" << "\n";
+		return;
+	}
+	if (N->nodetype == 1) {//factor : power
+		interpret_power(N->l);
+		N->valuetype = N->l->valuetype;
+		N->Value = N->l->Value;
+	}
+	if (N->nodetype == 2) {//factor : "+" factor
+		interpret_power(N->l);
+		if (N->l->valuetype != NUMBER){
+			fout_diag << "no arith for non-numbers" << "\n";
+			return;
+		}
+		N->valuetype = N->l->valuetype;
+		N->Value.Number = N->l->Value.Number;
+	}
+	if (N->nodetype == 3) {//factor : "-" factor
+		interpret_power(N->l);
+		if (N->l->valuetype != NUMBER){
+			fout_diag << "no arith for non-numbers" << "\n";
+			return;
+		}
+		N->valuetype = N->l->valuetype;
+		N->Value.Number = -1.0 * N->l->Value.Number;
+	}
+	fout_diag << "really interpreting a factor" << "\n";
+};
+void interpret_power(ast N) {
+	if (strcmp(N->symbol, "power")){
+		fout_diag << "this is not a power node" << "\n";
+		return;
+	}
+	fout_diag << "really interpreting a power" << "\n";
+	if (N->nodetype == 1) {//power : atom_expr
+		N->Value = N->l->Value;
+		N->valuetype = N->l->valuetype;
+		N->valuenode = N->l->valuenode;
+	}
+	if (N->nodetype == 2) {//power : atom_expr "**" factor
+		interpret_atom_expr(N->l);
+		interpret_factor(N->r);
+		if (N->l->valuetype != NUMBER || N->r->valuetype != NUMBER) {
+			fout_diag << "power is for numbers, while these are not" << "\n";
+			return;
+		}
+		N->valuetype = NUMBER;
+		N->Value.Number = pow(N->l->Value.Number, N->r->Value.Number);
+	}
+};
+void interpret_atom_expr(ast N) {
+	if (strcmp(N->symbol, "atom_expr")){
+		fout_diag << "this is not a atom_expr node" << "\n";
+		return;
+	}
+	fout_diag << "really interpreting a atom_expr" << "\n";
+	if (N->nodetype == 1) {//atom_expr : atom
+		N->Value = N->l->Value;
+		N->valuetype = N->l->valuetype;
+	}
+	if (N->nodetype == 2) {//atom_expr : atom trailer_star
+		;
 	}
 };

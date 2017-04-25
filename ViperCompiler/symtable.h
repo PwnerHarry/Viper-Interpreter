@@ -32,5 +32,3 @@ SymTable searchTable(char * NAME) {
 	}
 	return 0;
 };
-SymTable addEntry(char * SYMNAME, int BEGIN, int END, int TYPE, SValue VALUE);//Definitions after main
-void disptable();
