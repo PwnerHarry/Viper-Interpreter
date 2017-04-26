@@ -9,10 +9,6 @@
 using namespace std;
 ofstream fout_diag("PARSER.log", ios::out);
 const int TOKEN_TABLE_SIZE = 4096;
-const int INPUT = 12345;
-const int STMT = 12346;
-const int FINPUT = 12346;
-
 
 typedef union {
 	double Number;
@@ -20,7 +16,6 @@ typedef union {
 	char * Name;
 	char Char;
 	bool Bool;
-	int Int;
 } SValue;
 
 class _Object {
@@ -68,7 +63,6 @@ union YYSTYPE{
 	ast AST;
 	double Number;
 	char * String;
-	int Int;
 	char * Name;
 	char Char;
 	bool Bool;
@@ -78,7 +72,6 @@ int ReadTokens(ifstream &f, TokenTable * T);
 void PrintTokens(TokenTable * T);
 void yyerror(char *s);
 char * inttype(int type);
-void dispasn(ast N);
 ast newnode(char * symbol, int nodetype, int valuetype = 0);
 SymTable addEntry(char * SYMNAME, int BEGIN, int END, int TYPE, SValue VALUE);//Definitions after main
 void disptable();
@@ -104,7 +97,6 @@ void interpret_atom_expr(ast N);
 %token	<Name>				NAME
 %token	<Char>				CHAR
 %token	<Bool>				BOOL
-%token	<Int>				INT
 %token	INDENT
 %token	DEDENT
 %token	ENDMARKER
@@ -190,9 +182,9 @@ input:
 
 and_expr:
 	shift_expr {
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("and_expr", 1);
+		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tand_expr : shift_expr\n";
-		dispasn($<AST>$);
 	}|
 	and_expr "&" shift_expr {
 		$<AST>$ = newnode("and_expr", 2);
@@ -205,14 +197,12 @@ and_test:
 	not_test {
 		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\tand_test : not_test\n";
-		dispasn($<AST>$);
 	}|
 	and_test "and" not_test {
 		$<AST>$ = newnode("and_test", 2);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\tand_test : and_test \"and\" not_test\n";
-		};
+	};
 
 arglist					: arglist_sub
 						| arglist_sub ","
@@ -233,9 +223,9 @@ argument:
 
 arith_expr:
 	term {
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("arith_expr", 1);
+		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tarith_expr : term\n";
-		dispasn($<AST>$);
 	}|
 	arith_expr "+" term {
 		$<AST>$ = newnode("arith_expr", 2);
@@ -253,39 +243,31 @@ arith_expr:
 atom:
 	"True" {
 		$<AST>$ = newnode("atom", 1, BOOL);
-		$<AST>$->nodetype = BOOL;
 		$<AST>$->Value.Bool = true;
-		dispasn($<AST>$);
 	}|
 	"False" {
 		$<AST>$ = newnode("atom", 2, BOOL);
-		$<AST>$->nodetype = BOOL;
 		$<AST>$->Value.Bool = false;
-		dispasn($<AST>$);
 	}|
 	NAME {
 		$<AST>$ = newnode("atom", 3, NAME);
 		$<AST>$->Value.Name = $<Name>1;
 		fout_diag << "BISON\tatom : NAME\n";
-		dispasn($<AST>$);
 	}|
 	STRING {
 		$<AST>$ = newnode("atom", 4, STRING);
 		$<AST>$->Value.String = $<String>1;
 		fout_diag << "BISON\tatom : STRING\n";
-		dispasn($<AST>$);
 	}|
 	CHAR {
 		$<AST>$ = newnode("atom", 5, CHAR);
 		$<AST>$->Value.Char = $<Char>1;
 		fout_diag << "BISON\tatom : NUMBER\n";
-		dispasn($<AST>$);
 	}|
 	NUMBER {
 		$<AST>$ = newnode("atom", 6, NUMBER);
 		$<AST>$->Value.Number = $<Number>1;
 		fout_diag << "BISON\tatom : NUMBER\n";
-		dispasn($<AST>$);
 	};
 
 atom_expr:
@@ -293,6 +275,11 @@ atom_expr:
 		$<AST>$ = newnode("atom_expr", 1);
 		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tatom_expr : atom\n";
+	}|
+	"(" expr ")" {
+		$<AST>$ = newnode("atom_expr", 2);
+		$<AST>$->l = $<AST>2;
+		fout_diag << "BISON\tatom_expr : \"(\" expr \")\"\n";
 	}|
 	atom trailer_plus {
 		fout_diag << "BISON\tatom_expr : atom trailer_plus\n";		
@@ -316,7 +303,6 @@ comparison:
 	expr {
 		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\tcomparison : expr\n";
-		dispasn($<AST>$);
 	}|
 	comparison comp_op expr {
 		$<AST>$ = newnode("comparison", 2);
@@ -395,9 +381,9 @@ continue_stmt			: "continue"
 
 expr:
 	xor_expr {
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("expr", 1);
+		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\texpr : xor_expr\n";
-		dispasn($<AST>$);
 	}|
 	expr "|" xor_expr {
 		$<AST>$ = newnode("expr", 2);
@@ -413,7 +399,6 @@ expr_stmt:
 		$<AST>$->l->Value.Name = $<Name>1;
 		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\texpr_stmt : NAME \'=' expr\n";
-		dispasn($<AST>$);
 	};
 
 factor:
@@ -421,19 +406,16 @@ factor:
 		$<AST>$ = newnode("factor", 1);
 		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tfactor : power\n";
-		dispasn($<AST>$);
 	}|
 	"+" factor {
 		$<AST>$ = newnode("factor", 2);
 		$<AST>$->l = $<AST>2;
 		fout_diag << "BISON\tfactor : \"+\" factor\n";
-		dispasn($<AST>$);
 	}|
 	"-" factor{
 		$<AST>$ = newnode("factor", 3);
 		$<AST>$->l = $<AST>2;
 		fout_diag << "BISON\tfactor : \"-\" factor\n";
-		dispasn($<AST>$);
 	};
 
 file_input:
@@ -500,14 +482,12 @@ not_test:
 	comparison {
 		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\tnot_test : comparison\n";
-		dispasn($<AST>$);
 	};
 
 or_test:
 	and_test {
 		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\tor_test : and_test\n";
-		dispasn($<AST>$);
 	}|
 	or_test "or" and_test {
 		$<AST>$ = newnode("or_test", 2);
@@ -547,9 +527,9 @@ return_stmt:
 
 shift_expr:
 	arith_expr {
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("shift_expr", 1);
+		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tshift_expr : arith_expr\n";
-		dispasn($<AST>$);
 	}|
 	shift_expr "<<" arith_expr {
 		$<AST>$ = newnode("shift_expr", 2);
@@ -632,32 +612,32 @@ suite_sub:
 
 term:
 	factor {
-		$<AST>$ = $<AST>1;
+		$<AST>$ = newnode("term", 1);
+		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tterm : factor\n";
-		dispasn($<AST>$);
 	}|
 	term "*" factor {
 		$<AST>$ = newnode("term", 2);
 		$<AST>$->l = $<AST>1;
-		$<AST>$->l = $<AST>3;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tterm : term \"*\" factor\n";
 	}|
 	term "/" factor {
 		$<AST>$ = newnode("term", 3);
 		$<AST>$->l = $<AST>1;
-		$<AST>$->l = $<AST>3;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tterm : term \"/\" factor\n";
 	}|
 	term "%" factor {
 		$<AST>$ = newnode("term", 4);
 		$<AST>$->l = $<AST>1;
-		$<AST>$->l = $<AST>3;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tterm : term \"%\" factor\n";
 	}|
 	term "//" factor {
 		$<AST>$ = newnode("term", 5);
 		$<AST>$->l = $<AST>1;
-		$<AST>$->l = $<AST>3;
+		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tterm : term \"//\" factor\n";
 	};
 
@@ -665,7 +645,6 @@ test:
 	or_test {
 		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\ttest : or_test\n";
-		dispasn($<AST>$);
 	}|
 	or_test "if" or_test "else" test
 	;
@@ -674,7 +653,6 @@ testlist:
 	testlist_sub {
 		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\ttestlist : test testlist_sub\n";
-		dispasn($<AST>$);
 	}|
 	testlist_sub ","
 	;
@@ -683,7 +661,6 @@ testlist_sub:
 	test {
 		$<AST>$ = $<AST>1;
 		fout_diag << "BISON\ttestlist_sub : \n";
-		dispasn($<AST>$);
 	}|
 	testlist_sub "," test
 	;
@@ -718,17 +695,17 @@ while_stmt:
 ;
 
 xor_expr:
-and_expr {
-	$<AST>$ = $<AST>1;
-	fout_diag << "BISON\txor_expr : and_expr\n";
-	dispasn($<AST>$);
-}|
-xor_expr "^" and_expr {
-	$<AST>$ = newnode("xor_expr", 2);
-	$<AST>$->l = $<AST>1;
-	$<AST>$->r = $<AST>3;
-	fout_diag << "BISON\txor_expr : xor_expr \"^\" and_expr\n";
-};
+	and_expr {
+		$<AST>$ = newnode("xor_expr", 1);
+		$<AST>$->l = $<AST>1;
+		fout_diag << "BISON\txor_expr : and_expr\n";
+	}|
+	xor_expr "^" and_expr {
+		$<AST>$ = newnode("xor_expr", 2);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>3;
+		fout_diag << "BISON\txor_expr : xor_expr \"^\" and_expr\n";
+	};
 %%
 
 int main(int argc, char * argv[]) {
@@ -932,39 +909,6 @@ int yylex() {
 }
 void yyerror(char *s) {
 	fprintf(stderr, "%s\n", s);
-}
-void dispasn(ast N) {
-	switch (N->nodetype){
-		case NUMBER:{
-			fout_diag << "SVAL\t" << N->Value.Number << "\n";
-			break;
-		}
-		case INT:{
-			fout_diag << "SVAL\t" << N->Value.Int << "\n";
-			break;
-		}
-		case BOOL:{
-			if (N->Value.Bool)
-				fout_diag << "SVAL\t" << "true" << "\n";
-			else
-				fout_diag << "SVAL\t" << "false" << "\n";
-			break;
-		}
-		case CHAR:{
-			fout_diag << "SVAL\t" << N->Value.Char << "\n";
-			break;
-		}
-		case STRING:{
-			fout_diag << "SVAL\t" << N->Value.String << "\n";
-			break;
-		}
-		case NAME:{
-			fout_diag << "SVAL\t" << N->Value.Name << "\n";
-			break;
-		}
-		default:
-			break;
-	}
 };
 ast newnode(char * symbol, int nodetype, int valuetype) {
 	ast N = new asn;
@@ -972,7 +916,7 @@ ast newnode(char * symbol, int nodetype, int valuetype) {
 	N->valuetype = valuetype;
 	N->symbol = new char[128];
 	strcpy(N->symbol, symbol);
-	if (nodetype == NUMBER || nodetype == BOOL || nodetype == NAME || nodetype == INT || nodetype == CHAR || nodetype == STRING)
+	if (nodetype == NUMBER || nodetype == BOOL || nodetype == NAME || nodetype == CHAR || nodetype == STRING)
 		N->valuenode = true;
 	return N;
 };
@@ -1024,12 +968,6 @@ char * inttype(int type){
 			return R;
 			break;
 		}
-		case INT:{
-			char * R = new char[32];
-			strcpy(R, "INT");
-			return R;
-			break;
-		}
 		case NUMBER:{
 			char * R = new char[32];
 			strcpy(R, "NUMBER");
@@ -1060,12 +998,6 @@ char * inttype(int type){
 			return R;
 			break;
 		}
-		case FINPUT:{
-			char * R = new char[32];
-			strcpy(R, "FINPUT");
-			return R;
-			break;
-		}
 		case 0:{
 			char * R = new char[32];
 			strcpy(R, "NULL");
@@ -1092,10 +1024,6 @@ void disptable(){
 					fout_diag << S->VALUE.Number << "\n";
 					break;
 				}
-				case INT:{
-					fout_diag << S->VALUE.Int << "\n";
-					break;
-				}
 				case STRING:{
 					fout_diag << S->VALUE.String << "\n";
 					break;
@@ -1115,7 +1043,8 @@ void disptable(){
 };
 void interpret_stmt(ast N){
 	if (strcmp(N->symbol, "stmt")){
-		fout_diag << "this is not a stmt node" << "\n";
+		fout_diag << "interpret_stmt:\tthis is not a stmt node" << "\n";
+		fout_diag << "interpret_stmt:\tthis is a " << N->symbol << " node" << "\n";
 		return;
 	}
 	fout_diag << "pretending to interpret a stmt" << "\n";
@@ -1123,70 +1052,614 @@ void interpret_stmt(ast N){
 		fout_diag << "pretending to interpret a simple_stmt" << "\n";
 		N = N->l;
 		fout_diag << "entered a node with type" << "\t" << inttype(N->nodetype) << "\n";
-		switch(N->nodetype){
-			case EQUAL:{
-				interpret_expr_stmt(N);
-				break;
-			}
-		}
+		if (!strcmp(N->symbol, "expr_stmt")){
+			fout_diag << "interpret_stmt:\tfound a expr_stmt" << "\n";
+			interpret_expr_stmt(N);
+		};
 	}
 	if (N->r && !N->l){//compound_stmt
 		fout_diag << "pretending to interpret a compound_stmt" << "\n";
 	}
 };
 void interpret_expr_stmt(ast N){
+	fout_diag << "interpret_expr_stmt" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
 	if (strcmp(N->symbol, "expr_stmt")){
-		fout_diag << "this is not a expr_stmt node" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A expr_stmt NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
-	fout_diag << "pretending to interpret a expr_stmt" << "\n";
 	interpret_expr(N->r);
+	SymTable S = searchTable(N->l->Value.Name);
+	if (S){
+		fout_diag << "\t" << "EXISTING SYMBOL FOUND" << "\n";
+		if (S->TYPE && S->TYPE != N->r->valuetype){
+			fout_diag << "\t" << "INCOMPATIBLE VALUE TYPE" << "\n";
+			return;
+		}
+	}
+	else {
+		fout_diag << "\t" << "TIS A NEW SYMBOL" << "\n";
+		S = addEntry(N->l->Value.Name, -1, -1, N->r->valuetype);
+	}
+	S->VALUE = N->r->Value;
 };
 void interpret_expr(ast N) {
+	fout_diag << "interpret_expr" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
 	if (strcmp(N->symbol, "expr")){
-		fout_diag << "this is not a expr node" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A expr NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
-	fout_diag << "pretending to interpret a expr" << "\n";
+	if (N->nodetype == 1) {//expr: xor_expr
+		interpret_xor_expr(N->l);
+		N->valuetype = N->l->valuetype;
+		N->Value = N->l->Value;
+	}
+	if (N->nodetype == 2) {//expr : expr "|" xor_expr
+		interpret_expr(N->l);
+		interpret_xor_expr(N->r);
+		double buff1, buff2;
+		if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "logical xor IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff1 = S->VALUE.Number;
+		}
+		if (N->r->valuetype == NAME) {
+			SymTable S = searchTable(N->r->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "logical xor IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff2 = S->VALUE.Number;
+		}
+		if (N->l->valuetype == NUMBER)
+			buff1 = N->l->Value.Number;
+		if (N->r->valuetype == NUMBER)
+			buff2 = N->r->Value.Number;
+		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+			fout_diag << "\t" << "ERROR" << "\t" << "logical xor IS FOR NUMBERS ONLY" << "\n";
+			return;
+		}
+		if (int(buff1) != buff1 || int(buff2) != buff2) {
+			fout_diag << "\t" << "ERROR" << "\t" << "logical xor CAN ONLY PROCEED WITH INTEGERS" << "\n";
+			return;
+		}
+		N->valuetype = NUMBER;
+		N->Value.Number = int(buff1) | int(buff2);
+	}
 };
 void interpret_xor_expr(ast N) {
+	fout_diag << "interpret_xor_expr" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
 	if (strcmp(N->symbol, "xor_expr")){
-		fout_diag << "this is not a xor_expr node" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A xor_expr NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
-	fout_diag << "pretending to interpret a xor_expr" << "\n";
+	if (N->nodetype == 1) {//xor_expr : and_expr
+		interpret_and_expr(N->l);
+		N->valuetype = N->l->valuetype;
+		N->Value = N->l->Value;
+	}
+	if (N->nodetype == 2) {//xor_expr : xor_expr "^" and_expr
+		interpret_xor_expr(N->l);
+		interpret_and_expr(N->r);
+		double buff1, buff2;
+		if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "logical xor IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff1 = S->VALUE.Number;
+		}
+		if (N->r->valuetype == NAME) {
+			SymTable S = searchTable(N->r->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "logical xor IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff2 = S->VALUE.Number;
+		}
+		if (N->l->valuetype == NUMBER)
+			buff1 = N->l->Value.Number;
+		if (N->r->valuetype == NUMBER)
+			buff2 = N->r->Value.Number;
+		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+			fout_diag << "\t" << "ERROR" << "\t" << "logical xor IS FOR NUMBERS ONLY" << "\n";
+			return;
+		}
+		if (int(buff1) != buff1 || int(buff2) != buff2) {
+			fout_diag << "\t" << "ERROR" << "\t" << "logical xor CAN ONLY PROCEED WITH INTEGERS" << "\n";
+			return;
+		}
+		N->valuetype = NUMBER;
+		N->Value.Number = int(buff1) ^ int(buff2);
+	}
 };
 void interpret_and_expr(ast N) {
+	fout_diag << "interpret_and_expr" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
 	if (strcmp(N->symbol, "and_expr")){
-		fout_diag << "this is not a and_expr node" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A and_expr NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
-	fout_diag << "pretending to interpret a and_expr" << "\n";
+	if (N->nodetype == 1) {//and_expr : shift_expr
+		interpret_shift_expr(N->l);
+		N->valuetype = N->l->valuetype;
+		N->Value = N->l->Value;
+	}
+	if (N->nodetype == 2) {//and_expr : and_expr "&" shift_expr
+		interpret_and_expr(N->l);
+		interpret_shift_expr(N->r);
+		double buff1, buff2;
+		if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "logical and IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff1 = S->VALUE.Number;
+		}
+		if (N->r->valuetype == NAME) {
+			SymTable S = searchTable(N->r->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "logical and IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff2 = S->VALUE.Number;
+		}
+		if (N->l->valuetype == NUMBER)
+			buff1 = N->l->Value.Number;
+		if (N->r->valuetype == NUMBER)
+			buff2 = N->r->Value.Number;
+		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+			fout_diag << "\t" << "ERROR" << "\t" << "logical and IS FOR NUMBERS ONLY" << "\n";
+			return;
+		}
+		if (int(buff1) != buff1 || int(buff2) != buff2) {
+			fout_diag << "\t" << "ERROR" << "\t" << "logical and CAN ONLY PROCEED WITH INTEGERS" << "\n";
+			return;
+		}
+		N->valuetype = NUMBER;
+		N->Value.Number = int(buff1) & int(buff2);
+	}
 };
 void interpret_shift_expr(ast N) {
-	if (strcmp(N->symbol, "and_expr")){
-		fout_diag << "this is not a and_expr node" << "\n";
+	fout_diag << "interpret_shift_expr" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
+	if (strcmp(N->symbol, "shift_expr")){
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A shift_expr NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
-	fout_diag << "pretending to interpret a shift_expr" << "\n";
+	if (N->nodetype == 1) {//shift_expr : arith_expr
+		interpret_arith_expr(N->l);
+		N->valuetype = N->l->valuetype;
+		N->Value = N->l->Value;
+	}
+	if (N->nodetype == 2) {//shift_expr : shift_expr "<<" arith_expr
+		interpret_shift_expr(N->l);
+		interpret_arith_expr(N->r);
+		double buff1, buff2;
+		if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "<< IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff1 = S->VALUE.Number;
+		}
+		if (N->r->valuetype == NAME) {
+			SymTable S = searchTable(N->r->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "<< IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff2 = S->VALUE.Number;
+		}
+		if (N->l->valuetype == NUMBER)
+			buff1 = N->l->Value.Number;
+		if (N->r->valuetype == NUMBER)
+			buff2 = N->r->Value.Number;
+		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+			fout_diag << "\t" << "ERROR" << "\t" << "<< IS FOR NUMBERS ONLY" << "\n";
+			return;
+		}
+		if (int(buff1) != buff1 || int(buff2) != buff2) {
+			fout_diag << "\t" << "ERROR" << "\t" << "DIGITS MOVE CAN ONLY PROCEED WITH INTEGERS" << "\n";
+			return;
+		}
+		N->valuetype = NUMBER;
+		N->Value.Number = buff1 * pow(2, int(buff2));
+	}
+	if (N->nodetype == 3) {//shift_expr : shift_expr ">>" arith_expr
+		interpret_shift_expr(N->l);
+		interpret_arith_expr(N->r);
+		double buff1, buff2;
+		if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << ">> IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff1 = S->VALUE.Number;
+		}
+		if (N->r->valuetype == NAME) {
+			SymTable S = searchTable(N->r->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << ">> IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff2 = S->VALUE.Number;
+		}
+		if (N->l->valuetype == NUMBER)
+			buff1 = N->l->Value.Number;
+		if (N->r->valuetype == NUMBER)
+			buff2 = N->r->Value.Number;
+		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+			fout_diag << "\t" << "ERROR" << "\t" << ">> IS FOR NUMBERS ONLY" << "\n";
+			return;
+		}
+		if (int(buff1) != buff1 || int(buff2) != buff2) {
+			fout_diag << "\t" << "ERROR" << "\t" << "DIGITS MOVE CAN ONLY PROCEED WITH INTEGERS" << "\n";
+			return;
+		}
+		N->valuetype = NUMBER;
+		N->Value.Number = buff1 / pow(2, int(buff2));
+	}
 };
 void interpret_arith_expr(ast N) {
+	fout_diag << "interpret_arith_expr" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
 	if (strcmp(N->symbol, "arith_expr")){
-		fout_diag << "this is not a arith_expr node" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A arith_expr NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
-	fout_diag << "pretending to interpret a arith_expr" << "\n";
+	if (N->nodetype == 1) {//arith_expr : term
+		interpret_term(N->l);
+		N->valuetype = N->l->valuetype;
+		N->Value = N->l->Value;
+	}
+	if (N->nodetype == 2) {//arith_expr : arith_expr "+" term
+		interpret_arith_expr(N->l);
+		interpret_term(N->r);
+		double buff1, buff2;
+		if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "plus IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff1 = S->VALUE.Number;
+		}
+		if (N->r->valuetype == NAME) {
+			SymTable S = searchTable(N->r->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "plus IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff2 = S->VALUE.Number;
+		}
+		if (N->l->valuetype == NUMBER)
+			buff1 = N->l->Value.Number;
+		if (N->r->valuetype == NUMBER)
+			buff2 = N->r->Value.Number;
+		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+			fout_diag << "\t" << "ERROR" << "\t" << "plus IS FOR NUMBERS ONLY" << "\n";
+			return;
+		}
+		N->valuetype = NUMBER;
+		N->Value.Number = buff1 + buff2;
+	}
+	if (N->nodetype == 3) {//arith_expr : arith_expr "-" term
+		interpret_arith_expr(N->l);
+		interpret_term(N->r);
+		double buff1, buff2;
+		if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "minus IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff1 = S->VALUE.Number;
+		}
+		if (N->r->valuetype == NAME) {
+			SymTable S = searchTable(N->r->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "minus IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff2 = S->VALUE.Number;
+		}
+		if (N->l->valuetype == NUMBER)
+			buff1 = N->l->Value.Number;
+		if (N->r->valuetype == NUMBER)
+			buff2 = N->r->Value.Number;
+		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+			fout_diag << "\t" << "ERROR" << "\t" << "minus IS FOR NUMBERS ONLY" << "\n";
+			return;
+		}
+		N->valuetype = NUMBER;
+		N->Value.Number = buff1 - buff2;
+	}
 };
 void interpret_term(ast N) {
+	fout_diag << "interpret_term" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
 	if (strcmp(N->symbol, "term")){
-		fout_diag << "this is not a term node" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A term NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
-	fout_diag << "pretending to interpret a term" << "\n";
+	if (N->nodetype == 1) {//term : factor
+		interpret_factor(N->l);
+		N->valuetype = N->l->valuetype;
+		N->Value = N->l->Value;
+	}
+	if (N->nodetype == 2) {//term : term "*" factor
+		interpret_term(N->l);
+		interpret_factor(N->r);
+		double buff1, buff2;
+		if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "mult IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff1 = S->VALUE.Number;
+		}
+		if (N->r->valuetype == NAME) {
+			SymTable S = searchTable(N->r->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "mult IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff2 = S->VALUE.Number;
+		}
+		if (N->l->valuetype == NUMBER)
+			buff1 = N->l->Value.Number;
+		if (N->r->valuetype == NUMBER)
+			buff2 = N->r->Value.Number;
+		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+			fout_diag << "\t" << "ERROR" << "\t" << "mult IS FOR NUMBERS ONLY" << "\n";
+			return;
+		}
+		N->valuetype = NUMBER;
+		N->Value.Number = buff1 * buff2;
+	}
+	if (N->nodetype == 3) {//term : term "/" factor
+		interpret_term(N->l);
+		interpret_factor(N->r);
+		double buff1, buff2;
+		if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "didv IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff1 = S->VALUE.Number;
+		}
+		if (N->r->valuetype == NAME) {
+			SymTable S = searchTable(N->r->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "didv IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff2 = S->VALUE.Number;
+		}
+		if (N->l->valuetype == NUMBER)
+			buff1 = N->l->Value.Number;
+		if (N->r->valuetype == NUMBER)
+			buff2 = N->r->Value.Number;
+		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+			fout_diag << "\t" << "ERROR" << "\t" << "didv IS FOR NUMBERS ONLY" << "\n";
+			return;
+		}
+		N->valuetype = NUMBER;
+		N->Value.Number = buff1 / buff2;
+	}
+	if (N->nodetype == 4) {//term : term "%" factor
+		interpret_term(N->l);
+		interpret_factor(N->r);
+		double buff1, buff2;
+		if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "mod IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff1 = S->VALUE.Number;
+		}
+		if (N->r->valuetype == NAME) {
+			SymTable S = searchTable(N->r->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "mod IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff2 = S->VALUE.Number;
+		}
+		if (N->l->valuetype == NUMBER)
+			buff1 = N->l->Value.Number;
+		if (N->r->valuetype == NUMBER)
+			buff2 = N->r->Value.Number;
+		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+			fout_diag << "\t" << "ERROR" << "\t" << "mod IS FOR NUMBERS ONLY" << "\n";
+			return;
+		}
+		if (int(buff1) != buff1 || int(buff2) != buff2) {
+			fout_diag << "\t" << "ERROR" << "\t" << "mod IS FOR INTEGERS ONLY" << "\n";
+			return;
+		}
+		N->valuetype = NUMBER;
+		N->Value.Number = int(buff1) % int(buff2);
+	}
+	if (N->nodetype == 5) {//term : term "//" factor
+		interpret_term(N->l);
+		interpret_factor(N->r);
+		double buff1, buff2;
+		if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "fdv IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff1 = S->VALUE.Number;
+		}
+		if (N->r->valuetype == NAME) {
+			SymTable S = searchTable(N->r->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "fdv IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff2 = S->VALUE.Number;
+		}
+		if (N->l->valuetype == NUMBER)
+			buff1 = N->l->Value.Number;
+		if (N->r->valuetype == NUMBER)
+			buff2 = N->r->Value.Number;
+		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+			fout_diag << "\t" << "ERROR" << "\t" << "fdv IS FOR NUMBERS ONLY" << "\n";
+			return;
+		}
+		N->valuetype = NUMBER;
+		N->Value.Number = floor(buff1 / buff2);
+	}
 };
 void interpret_factor(ast N) {
+	fout_diag << "interpret_factor" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
 	if (strcmp(N->symbol, "factor")){
-		fout_diag << "this is not a factor node" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A factor NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
 	if (N->nodetype == 1) {//factor : power
@@ -1195,58 +1668,127 @@ void interpret_factor(ast N) {
 		N->Value = N->l->Value;
 	}
 	if (N->nodetype == 2) {//factor : "+" factor
-		interpret_power(N->l);
-		if (N->l->valuetype != NUMBER){
-			fout_diag << "no arith for non-numbers" << "\n";
+		interpret_factor(N->l);
+		double buff;
+		if (N->l->valuetype == NUMBER)
+			buff = N->l->Value.Number;
+		else if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "factor IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff = S->VALUE.Number;
+		}
+		else {
+			fout_diag << "\t" << "ERROR" << "\t" << "factor IS FOR NUMBERS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = N->l->valuetype;
-		N->Value.Number = N->l->Value.Number;
+		N->valuetype = NUMBER;
+		N->Value.Number = buff;
 	}
 	if (N->nodetype == 3) {//factor : "-" factor
-		interpret_power(N->l);
-		if (N->l->valuetype != NUMBER){
-			fout_diag << "no arith for non-numbers" << "\n";
+		interpret_factor(N->l);
+		double buff;
+		if (N->l->valuetype == NUMBER)
+			buff = N->l->Value.Number;
+		else if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "factor IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff = S->VALUE.Number;
+		}
+		else {
+			fout_diag << "\t" << "ERROR" << "\t" << "factor IS FOR NUMBERS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = N->l->valuetype;
-		N->Value.Number = -1.0 * N->l->Value.Number;
+		N->valuetype = NUMBER;
+		N->Value.Number = -1.0 * buff;
 	}
-	fout_diag << "really interpreting a factor" << "\n";
 };
 void interpret_power(ast N) {
+	fout_diag << "interpret_power" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
 	if (strcmp(N->symbol, "power")){
-		fout_diag << "this is not a power node" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A power NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
-	fout_diag << "really interpreting a power" << "\n";
 	if (N->nodetype == 1) {//power : atom_expr
+		interpret_atom_expr(N->l);
 		N->Value = N->l->Value;
 		N->valuetype = N->l->valuetype;
-		N->valuenode = N->l->valuenode;
 	}
 	if (N->nodetype == 2) {//power : atom_expr "**" factor
 		interpret_atom_expr(N->l);
 		interpret_factor(N->r);
-		if (N->l->valuetype != NUMBER || N->r->valuetype != NUMBER) {
-			fout_diag << "power is for numbers, while these are not" << "\n";
+		double buff1, buff2;
+		if (N->l->valuetype == NAME) {
+			SymTable S = searchTable(N->l->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "power IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff1 = S->VALUE.Number;
+		}
+		if (N->r->valuetype == NAME) {
+			SymTable S = searchTable(N->r->Value.Name);
+			if (!S) {
+				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
+				return;
+			}
+			if (S->TYPE != NUMBER) {
+				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+				fout_diag << "\t" << "ERROR" << "\t" << "power IS FOR NUMBERS ONLY" << "\n";
+				return;
+			}
+			buff2 = S->VALUE.Number;
+		}
+		if (N->l->valuetype == NUMBER)
+			buff1 = N->l->Value.Number;
+		if (N->r->valuetype == NUMBER)
+			buff2 = N->r->Value.Number;
+		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
+			fout_diag << "\t" << "ERROR" << "\t" << "power IS FOR NUMBERS ONLY" << "\n";
 			return;
 		}
 		N->valuetype = NUMBER;
-		N->Value.Number = pow(N->l->Value.Number, N->r->Value.Number);
+		N->Value.Number = pow(buff1, buff2);
 	}
 };
 void interpret_atom_expr(ast N) {
+	fout_diag << "interpret_atom_expr" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
 	if (strcmp(N->symbol, "atom_expr")){
-		fout_diag << "this is not a atom_expr node" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT AN atom_expr NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
-	fout_diag << "really interpreting a atom_expr" << "\n";
 	if (N->nodetype == 1) {//atom_expr : atom
 		N->Value = N->l->Value;
 		N->valuetype = N->l->valuetype;
 	}
-	if (N->nodetype == 2) {//atom_expr : atom trailer_star
-		;
+	if (N->nodetype == 2) {//atom_expr : "(" expr ")"
+		interpret_expr(N->l);
+		N->Value = N->l->Value;
+		N->valuetype = N->l->valuetype;
 	}
 };
