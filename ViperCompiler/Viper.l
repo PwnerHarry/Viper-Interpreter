@@ -209,6 +209,7 @@ int main(int argc, char* argv[]) {
 		for (int i = 0; i < prev_dent - curr_dent; i++)
 			*fout << mylineno << "\t" << DEDENT << "\t" <<"DEDENT" << "\n";
 	prev_dent = curr_dent;
+	*fout << mylineno << "\t" << NEWLINE << "\t" << "NEWLINE" <<"\n";
 	*fout << mylineno << "\t" << ENDMARKER << "\t" << "ENDMARKER" <<"\n";
 	fin->close();
 	delete fin;

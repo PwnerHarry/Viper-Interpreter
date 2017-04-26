@@ -1,4 +1,4 @@
-const int STACK_SIZE = 1000;
+int STACK_SIZE = 100;
 class _Stack {
 public:
 	int top;
@@ -8,10 +8,11 @@ public:
 		S = (ast *)calloc(STACK_SIZE, sizeof(ast));
 	};
 	void PushStack(ast T){
-		S[++top] = T;
-		if (top >= STACK_SIZE){
-			fprintf(stderr, "Stack Overflow");
+		if (top == STACK_SIZE - 1){
+			STACK_SIZE *= 2;
+			S = (ast *)realloc(S, STACK_SIZE * sizeof(ast));
 		}
+		S[++top] = T;
 	};
 	void ClearStack(){
 		if (top <= -1)
