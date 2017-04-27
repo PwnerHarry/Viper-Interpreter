@@ -103,6 +103,7 @@ literal		{number}
 
 "True"		{*fout << mylineno << "\t" << TRUE << "\t" << YYText() << "\n";}
 "False"		{*fout << mylineno << "\t" << FALSE << "\t" << YYText() << "\n";}
+"print"		{*fout << mylineno << "\t" << PRINT << "\t" << YYText() << "\n";}
 "from"		{*fout << mylineno << "\t" << FROM << "\t" << YYText() << "\n";}
 "as"		{*fout << mylineno << "\t" << AS << "\t" << YYText() << "\n";}
 "is"		{*fout << mylineno << "\t" << IS << "\t" << YYText() << "\n";}

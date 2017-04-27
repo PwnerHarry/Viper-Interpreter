@@ -31,6 +31,10 @@ void PrintTokens(TokenTable * T) {
 				fout_diag << "ENDMARKER";
 				break;
 			}
+			case PRINT:{
+				fout_diag << "PRINT";
+				break;
+			}
 			default:{
 				fout_diag << T->t[i].Object.Value.String;
 				break;
@@ -57,9 +61,9 @@ int ReadTokens(ifstream &f, TokenTable * T) {
 				char temp;
 				f.get(temp);
 				f.get(temp);
-				T->t[i].Object.Value.String = new char[1024];
-				f.getline(T->t[i].Object.Value.String, 1024);
-				for (int j = 0; j < 1024; j++)
+				T->t[i].Object.Value.String = new char[64];
+				f.getline(T->t[i].Object.Value.String, 64);
+				for (int j = 0; j < 64; j++)
 					if (T->t[i].Object.Value.String[j] == '\0')
 						T->t[i].Object.Value.String[j - 1] = '\0';
 				break;
@@ -77,33 +81,33 @@ int ReadTokens(ifstream &f, TokenTable * T) {
 				break;
 			}
 			case NAME:{
-				T->t[i].Object.Value.String = new char[1024];
+				T->t[i].Object.Value.String = new char[64];
 				f >> T->t[i].Object.Value.String;
 				break;
 			}
 			case INDENT:{
 				layer++;
-				T->t[i].Object.Value.String = new char[1024];
+				T->t[i].Object.Value.String = new char[64];
 				f >> T->t[i].Object.Value.String;
 				free(T->t[i].Object.Value.String);
 				break;
 			}
 			case DEDENT:{
 				T->t[i].layer = --layer;
-				T->t[i].Object.Value.String = new char[1024];
+				T->t[i].Object.Value.String = new char[64];
 				f >> T->t[i].Object.Value.String;
 				free(T->t[i].Object.Value.String);
 				break;
 			}
 			case ENDMARKER:{
 				Break = 1;
-				T->t[i].Object.Value.String = new char[1024];
+				T->t[i].Object.Value.String = new char[64];
 				f >> T->t[i].Object.Value.String;
 				free(T->t[i].Object.Value.String);
 				break;
 			}
 			default:{
-				T->t[i].Object.Value.String = new char[1024];
+				T->t[i].Object.Value.String = new char[64];
 				f >> T->t[i].Object.Value.String;
 				break;
 			}

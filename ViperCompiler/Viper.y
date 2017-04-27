@@ -67,7 +67,6 @@ public:
 	char * symbol;
 	int valuetype;
 	asn * j;
-	asn * k;
 	asn * l;
 	asn * r;
 	SValue Value;
@@ -79,7 +78,6 @@ public:
 		l = 0;
 		r = 0;
 		j = 0;
-		k = 0;
 		Value.Number = 0;
 	};
 };
@@ -128,7 +126,9 @@ void interpret_stmt(ast N);
 void interpret_simple_stmt(ast N);
 void interpret_small_stmt(ast N);
 void interpret_compound_stmt(ast N);
+void interpret_while_stmt(ast N);
 void interpret_if_stmt(ast N);
+void interpret_flow_stmt(ast N);
 void interpret_test(ast N);
 void interpret_or_test(ast N);
 void interpret_and_test(ast N);
@@ -136,9 +136,7 @@ void interpret_not_test(ast N);
 void interpret_comparison(ast N);
 void interpret_suite(ast N);
 void interpret_suite_sub(ast N);
-void interpret_if_test_sub(ast N);
 void interpret_pass_stmt(ast N);
-void interpret_flow_stmt(ast N);
 void interpret_expr_stmt(ast N);
 void interpret_expr(ast N);
 void interpret_xor_expr(ast N);
@@ -149,8 +147,25 @@ void interpret_term(ast N);
 void interpret_factor(ast N);
 void interpret_power(ast N);
 void interpret_atom_expr(ast N);
+void interpret_print_stmt(ast N);
 /**/
-#include "stack.h"
+int STACK_SIZE = 100;
+class _Stack {
+public:
+	int top;
+	int max_top;
+	bool Break;
+	ast * S;
+	_Stack(){
+		top = -1;
+		max_top = -1;
+		S = (ast *)calloc(STACK_SIZE, sizeof(ast));
+	};
+	void PushStack(ast T);
+	void ClearStack();
+};
+_Stack MAINSTACK;
+/**/
 %}
 %define api.value.type		{union YYSTYPE}
 %token	<Number>			NUMBER
@@ -175,6 +190,7 @@ void interpret_atom_expr(ast N);
 %token	FROM				"from"
 %token	AS					"as"
 %token	IS					"is"
+%token	PRINT				"print"
 %token	WHILE				"while"
 %token	BREAK				"break"
 %token	CONTINUE			"continue"
@@ -240,7 +256,7 @@ input:
 		ROOT = $<AST>$;
 		fout_diag << "BISON\tinput : file_input ENDMARKER\n";
 	};
-
+	
 and_expr:
 	shift_expr {
 		$<AST>$ = newnode("and_expr", 1);
@@ -349,7 +365,7 @@ atom_expr:
 
 break_stmt:
 	"break" {
-		$<AST>$ = newnode("break_stmt", BREAK);
+		$<AST>$ = newnode("break_stmt", 1);
 	};
 
 classdef:
@@ -515,6 +531,8 @@ file_input:
 
 flow_stmt:
 	break_stmt {
+		$<AST>$ = newnode("flow_stmt", 1);
+		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tflow_stmt : break_stmt\n";
 	}|
 	continue_stmt {
@@ -530,29 +548,25 @@ funcdef:
 	};
 
 if_stmt:
-	"if" test ":" suite if_stmt_sub {
+	"if" test ":" suite {
 		$<AST>$ = newnode("if_stmt", 1);
 		$<AST>$->l = $<AST>2;
 		$<AST>$->r = $<AST>4;
-		$<AST>$->j = $<AST>5;
 		fout_diag << "BISON\tif_stmt : \"if\" test \":\" suite if_stmt_sub\n";
 	}|
-	"if" test ":" suite if_stmt_sub "else" ":" suite {
+	"if" test ":" suite newline_plus "else" ":" suite {
 		$<AST>$ = newnode("if_stmt", 2);
 		$<AST>$->l = $<AST>2;
 		$<AST>$->r = $<AST>4;
-		$<AST>$->j = $<AST>5;
-		$<AST>$->k = $<AST>8;
+		$<AST>$->j = $<AST>8;
 		fout_diag << "BISON\tif_stmt : \"if\" test \":\" suite if_stmt_sub \"else\" \":\" suite\n";
 	};
 
-if_stmt_sub:
-	%empty {
-		$<AST>$ = newnode("if_stmt_sub", 1);
-	}|
-	if_stmt_sub "elif" test ":" suite {
-		$<AST>$ = newnode("if_stmt_sub", 2);
-	};
+newline_plus:
+	NEWLINE
+	|
+	NEWLINE newline_plus
+	;
 
 not_test:
 	comparison {
@@ -599,6 +613,13 @@ power:
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>3;
 		fout_diag << "BISON\tpower : atom_expr \"**\" factor" << "\n";
+	};
+
+print_stmt:
+	"print" "(" expr ")" {
+		$<AST>$ = newnode("print_stmt", 1);
+		$<AST>$->l = $<AST>3;
+		fout_diag << "BISON\tprint_stmt : \"print\" \"(\" atom \")\"" << "\n";
 	};
 
 return_stmt:
@@ -653,6 +674,11 @@ small_stmt:
 		$<AST>$ = newnode("small_stmt", 3);
 		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tsmall_stmt : flow_stmt\n";
+	}|
+	print_stmt {
+		$<AST>$ = newnode("small_stmt", 4);
+		$<AST>$->l = $<AST>1;
+		fout_diag << "BISON\tsmall_stmt : print_stmt\n";
 	};
 
 stmt:
@@ -787,10 +813,11 @@ typedargslist_sub		: "," tfpdef
 						;
 						
 while_stmt:
-"while" test ":" suite
-|
-"while" test ":" suite "else" ":" suite
-;
+	"while" test ":" suite {
+		$<AST>$ = newnode("while_stmt", 1);
+		$<AST>$->l = $<AST>2;
+		$<AST>$->r = $<AST>4;
+	};
 
 xor_expr:
 	and_expr {
@@ -834,3 +861,4 @@ int main(int argc, char * argv[]) {
 #include "tools.h"
 #include "symtable.h"
 #include "interpret.h"
+#include "stack.h"

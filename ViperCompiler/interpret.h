@@ -38,6 +38,9 @@ void interpret_stmt(ast N){
 	}
 	if (N->nodetype == 1) {//stmt: simple_stmt
 		interpret_simple_stmt(N->l);
+		if (N->l->valuetype < 0){//flow
+			N->valuetype = N->l->valuetype;
+		}
 	}
 	if (N->nodetype == 2) {//stmt: compound_stmt
 		interpret_compound_stmt(N->l);
@@ -53,6 +56,9 @@ void interpret_simple_stmt(ast N){
 	}
 	if (N->nodetype == 1) {//simple_stmt: small_stmt NEWLINE
 		interpret_small_stmt(N->l);
+		if (N->l->valuetype < 0){//flow
+			N->valuetype = N->l->valuetype;
+		}
 	}
 };
 void interpret_small_stmt(ast N){
@@ -71,7 +77,61 @@ void interpret_small_stmt(ast N){
 	}
 	if (N->nodetype == 3) {//small_stmt: flow_stmt
 		interpret_flow_stmt(N->l);
+		N->valuetype = N->l->valuetype;
 	}
+	if (N->nodetype == 4)//small_stmt: print_stmt
+		interpret_print_stmt(N->l);
+};
+void interpret_print_stmt(ast N){
+	fout_diag << "interpret_print_stmt" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
+	if (strcmp(N->symbol, "print_stmt")){
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A print_stmt NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
+		return;
+	}
+	if (N->nodetype == 1){
+		interpret_expr(N->l);
+		if (N->l){
+			if (N->l->valuetype == NAME){
+				SymTable S = searchTable(N->l->Value.Name);
+				if (!S){
+					fout_diag << "\t" << "ERROR" << "\t" << "CANNOT PRINT A NON-EXISTING VARIABLE" << "\n";
+					return;
+				}
+				else {
+					if (S->TYPE == NUMBER)
+						cout << S->VALUE.Number << "\n";
+					if (S->TYPE == CHAR)
+						cout << S->VALUE.Char << "\n";
+					if (S->TYPE == STRING)
+						cout << S->VALUE.String << "\n";
+					if (S->TYPE == BOOL)
+						if (S->VALUE.Bool)
+							cout << "True" << "\n";
+						else
+							cout << "False" << "\n";
+					goto End;
+				}
+			}
+			if (N->l->valuetype == NUMBER)
+				cout << N->l->Value.Number << "\n";
+			if (N->l->valuetype == BOOL)
+				if (N->l->Value.Bool)
+					cout << "True" << "\n";
+				else
+					cout << "False" << "\n";
+			if (N->l->valuetype == STRING)
+				cout << N->l->Value.String << "\n";
+			if (N->l->valuetype == CHAR)
+				cout << N->l->Value.Char << "\n";
+		}
+		else {
+			fout_diag << "\t" << "CANNOT PRINT SOMETHING THAT DOESN\'T EXIST" << "\n";
+		}
+	}
+End:
+	return;
 };
 void interpret_compound_stmt(ast N){
 	fout_diag << "interpret_compound_stmt" << "\n";
@@ -81,9 +141,50 @@ void interpret_compound_stmt(ast N){
 		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
-	if (N->nodetype == 1) {//compound_stmt: if_stmt
+	if (N->nodetype == 1) //compound_stmt: if_stmt
 		interpret_if_stmt(N->l);
+	if (N->nodetype == 2) //compound_stmt: while_stmt
+		interpret_while_stmt(N->l);
+};
+void interpret_while_stmt(ast N){
+	fout_diag << "interpret_while_stmt" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
+	if (strcmp(N->symbol, "while_stmt")){
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A break_stmt NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
+		return;
 	}
+	if (N->nodetype == 1){//while_stmt : "while" test : suite
+		interpret_test(N->l);
+		bool buff = N->l->Value.Bool;
+		while (buff) {
+			if (N->r->valuetype == BREAK){
+				cout << "A Broken Suite" << "\n";
+				break;
+			}
+			interpret_suite(N->r);
+			interpret_test(N->l);
+			buff = N->l->Value.Bool;
+		}
+	}
+};
+void interpret_flow_stmt(ast N){
+	fout_diag << "interpret_flow_stmt" << "\n";
+	fout_diag << "\t" << "INITIATED" << "\n";
+	if (strcmp(N->symbol, "flow_stmt")){
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A flow_stmt NODE" << "\n";
+		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
+		return;
+	}
+	if (N->nodetype == 1)//flow_stmt : break_stmt
+		if (!strcmp(N->l->symbol, "break_stmt") && N->l->nodetype == 1)
+			N->valuetype = -BREAK;
+	if (N->nodetype == 2)//flow_stmt : continue_stmt
+		if (!strcmp(N->l->symbol, "continue_stmt") && N->l->nodetype == 1)
+			N->valuetype = -CONTINUE;
+	if (N->nodetype == 3)//flow_stmt : return_stmt
+		if (!strcmp(N->l->symbol, "return_stmt") && N->l->nodetype == 1)
+			N->valuetype = -RETURN;
 };
 void interpret_if_stmt(ast N){
 	fout_diag << "interpret_if_stmt" << "\n";
@@ -95,25 +196,15 @@ void interpret_if_stmt(ast N){
 	}
 	if (N->nodetype == 1) {//if_stmt: "if" test ":" suite if_stmt_sub
 		interpret_test(N->l);
-		if (N->l->Value.Bool == true) {
-			fout_diag << "TRUE!!!!!!" << "\n";//!!!!
+		if (N->l->Value.Bool == true)
 			interpret_suite(N->r);
-		}
-		else if (N->j->nodetype == 2) {
-			interpret_if_test_sub(N->j);
-		}
 	}
 	if (N->nodetype == 2) {//"if" test ":" suite if_stmt_sub "else" ":" suite
 		interpret_test(N->l);
-		if (N->l->Value.Bool == true) {
+		if (N->l->Value.Bool == true)
 			interpret_suite(N->r);
-		}
-		else if (N->j->nodetype == 2) {
-			interpret_if_test_sub(N->j);
-		}
-		else {
-			interpret_suite(N->k);
-		}
+		else
+			interpret_suite(N->j);
 	}
 };
 void interpret_test(ast N){
@@ -556,15 +647,6 @@ void interpret_comparison(ast N){
 			;
 	}
 }
-void interpret_if_test_sub(ast N){
-	fout_diag << "interpret_if_test_sub" << "\n";
-	fout_diag << "\t" << "INITIATED" << "\n";
-	if (strcmp(N->symbol, "if_test_sub")){
-		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT AN if_test_sub NODE" << "\n";
-		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
-		return;
-	}
-};
 void interpret_suite(ast N){
 	fout_diag << "interpret_suite" << "\n";
 	fout_diag << "\t" << "INITIATED" << "\n";
@@ -574,10 +656,18 @@ void interpret_suite(ast N){
 		return;
 	}
 	if (N->nodetype == 1){//suite : simple_stmt
-		interpret_simple_stmt(N->l);
+		if (1)//如果没被break
+			interpret_simple_stmt(N->l);
 	}
 	if (N->nodetype == 2){//suite : NEWLINE INDENT suite_sub DEDENT
-		interpret_suite_sub(N->l);
+		//cout << "value type\t" << N->l->valuetype << "\n";
+		if (N->l->valuetype == BREAK){
+			cout << "This suite is set to be broken" << "\n";
+			N->l->valuetype == 0;
+			N->valuetype == BREAK;
+		}
+		else
+			interpret_suite_sub(N->l);
 	}
 };
 void interpret_suite_sub(ast N){
@@ -590,34 +680,32 @@ void interpret_suite_sub(ast N){
 	}
 	_Stack SUITESTACK;
 	if (N->nodetype == 1){//suite_sub : stmt
-		SUITESTACK.PushStack(N->r);
+		if (1){//没有break才允许往里推
+			SUITESTACK.PushStack(N->r);
+		}
 	}
 	if (N->nodetype == 2){//suite_sub : suite_sub stmt
 		SUITESTACK.PushStack(N->r);
 		while (N->l && !strcmp(N->l->symbol, "suite_sub")){
 			N = N->l;
 			if (N->r && !strcmp(N->r->symbol, "stmt"))
-				SUITESTACK.PushStack(N->r);
+				if (1){//没有break才允许往里推
+					SUITESTACK.PushStack(N->r);
+				}
 		}
-		if (N->r && !strcmp(N->r->symbol, "stmt"))
-			SUITESTACK.PushStack(N->r);
 	}
 	SUITESTACK.ClearStack();
+	if (SUITESTACK.Break){
+		cout << "Stack is broken" << "\n";
+		N->valuetype = BREAK;
+	}
+		
 };
 void interpret_pass_stmt(ast N){
 	fout_diag << "interpret_pass_stmt" << "\n";
 	fout_diag << "\t" << "INITIATED" << "\n";
 	if (strcmp(N->symbol, "pass_stmt")){
 		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A pass_stmt NODE" << "\n";
-		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
-		return;
-	}
-};
-void interpret_flow_stmt(ast N){
-	fout_diag << "interpret_flow_stmt" << "\n";
-	fout_diag << "\t" << "INITIATED" << "\n";
-	if (strcmp(N->symbol, "flow_stmt")){
-		fout_diag << "\t" << "ERROR" << "\t" << "TIS NOT A simple_stmt NODE" << "\n";
 		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
