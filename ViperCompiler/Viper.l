@@ -101,40 +101,25 @@ literal		{number}
 "<<="		{*fout << mylineno << "\t" << LEFTSHIFTEQUAL << "\t" << YYText() << "\n";}
 ">>="		{*fout << mylineno << "\t" << RIGHTSHIFTEQUAL << "\t" << YYText() << "\n";}
 
-
+"True"		{*fout << mylineno << "\t" << TRUE << "\t" << YYText() << "\n";}
+"False"		{*fout << mylineno << "\t" << FALSE << "\t" << YYText() << "\n";}
+"print"		{*fout << mylineno << "\t" << PRINT << "\t" << YYText() << "\n";}
 "from"		{*fout << mylineno << "\t" << FROM << "\t" << YYText() << "\n";}
-"nonlocal"	{*fout << mylineno << "\t" << NONLOCAL << "\t" << YYText() << "\n";}
-"raise"		{*fout << mylineno << "\t" << RAISE << "\t" << YYText() << "\n";}
-"try"		{*fout << mylineno << "\t" << TRY << "\t" << YYText() << "\n";}
-"del"		{*fout << mylineno << "\t" << DEL << "\t" << YYText() << "\n";}
 "as"		{*fout << mylineno << "\t" << AS << "\t" << YYText() << "\n";}
-"assert"	{*fout << mylineno << "\t" << ASSERT << "\t" << YYText() << "\n";}
 "is"		{*fout << mylineno << "\t" << IS << "\t" << YYText() << "\n";}
-"except"	{*fout << mylineno << "\t" << EXCEPT << "\t" << YYText() << "\n";}
-"finally"	{*fout << mylineno << "\t" << FINALLY << "\t" << YYText() << "\n";}
-"lambda"	{*fout << mylineno << "\t" << LAMBDA << "\t" << YYText() << "\n";}
-"yield"		{*fout << mylineno << "\t" << YIELD << "\t" << YYText() << "\n";}
-"exec"		{*fout << mylineno << "\t" << EXEC << "\t" << YYText() << "\n";}
-"import"	{*fout << mylineno << "\t" << IMPORT << "\t" << YYText() << "\n";}
-"with"		{*fout << mylineno << "\t" << WITH << "\t" << YYText() << "\n";}
 "while"		{*fout << mylineno << "\t" << WHILE << "\t" << YYText() << "\n";}
 "break"		{*fout << mylineno << "\t" << BREAK << "\t" << YYText() << "\n";}
 "continue"	{*fout << mylineno << "\t" << CONTINUE << "\t" << YYText() << "\n";}
-"global"	{*fout << mylineno << "\t" << GLOBAL << "\t" << YYText() << "\n";}
 "elif"		{*fout << mylineno << "\t" << ELIF << "\t" << YYText() << "\n";}
 "else"		{*fout << mylineno << "\t" << ELSE << "\t" << YYText() << "\n";}
 "pass"		{*fout << mylineno << "\t" << PASS << "\t" << YYText() << "\n";}
 "return"	{*fout << mylineno << "\t" << RETURN << "\t" << YYText() << "\n";}
-"in"		{*fout << mylineno << "\t" << IN << "\t" << YYText() << "\n";}
-"for"		{*fout << mylineno << "\t" << FOR << "\t" << YYText() << "\n";}
 "class"		{*fout << mylineno << "\t" << CLASS << "\t" << YYText() << "\n";}
 "not"		{*fout << mylineno << "\t" << NOT << "\t" << YYText() << "\n";}
 "and"		{*fout << mylineno << "\t" << AND << "\t" << YYText() << "\n";}
 "or"		{*fout << mylineno << "\t" << OR << "\t" << YYText() << "\n";}
 "if"		{*fout << mylineno << "\t" << IF << "\t" << YYText() << "\n";}
 "def"		{*fout << mylineno << "\t" << DEF << "\t" << YYText() << "\n";}
-"async"		{*fout << mylineno << "\t" << ASYNC << "\t" << YYText() << "\n";}
-"await"		{*fout << mylineno << "\t" << AWAIT << "\t" << YYText() << "\n";}
 
 
 "**"		{*fout << mylineno << "\t" << DOUBLESTAR << "\t" << YYText() << "\n";}
@@ -225,6 +210,7 @@ int main(int argc, char* argv[]) {
 		for (int i = 0; i < prev_dent - curr_dent; i++)
 			*fout << mylineno << "\t" << DEDENT << "\t" <<"DEDENT" << "\n";
 	prev_dent = curr_dent;
+	*fout << mylineno << "\t" << NEWLINE << "\t" << "NEWLINE" <<"\n";
 	*fout << mylineno << "\t" << ENDMARKER << "\t" << "ENDMARKER" <<"\n";
 	fin->close();
 	delete fin;
