@@ -695,11 +695,6 @@ void interpret_suite_sub(ast N){
 		}
 	}
 	SUITESTACK.ClearStack();
-	if (SUITESTACK.Break){
-		cout << "Stack is broken" << "\n";
-		N->valuetype = BREAK;
-	}
-		
 };
 void interpret_pass_stmt(ast N){
 	fout_diag << "interpret_pass_stmt" << "\n";

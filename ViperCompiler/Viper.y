@@ -153,12 +153,9 @@ int STACK_SIZE = 100;
 class _Stack {
 public:
 	int top;
-	int max_top;
-	bool Break;
 	ast * S;
 	_Stack(){
 		top = -1;
-		max_top = -1;
 		S = (ast *)calloc(STACK_SIZE, sizeof(ast));
 	};
 	void PushStack(ast T);
@@ -548,7 +545,7 @@ funcdef:
 	};
 
 if_stmt:
-	"if" test ":" suite {
+	"if" test ":" suite newline_plus {
 		$<AST>$ = newnode("if_stmt", 1);
 		$<AST>$->l = $<AST>2;
 		$<AST>$->r = $<AST>4;
@@ -835,12 +832,12 @@ xor_expr:
 
 int main(int argc, char * argv[]) {
 	if (argc != 2) {
-		fprintf(stderr, "1 argument required!");
+		fprintf(stderr, "1 argument required!\n");
 		exit(1);
 	}
 	ifstream fin(argv[1], ios::in);
 	if (fin.fail() || fin.bad()) {
-		fprintf(stderr, "Destination Error");
+		fprintf(stderr, "Destination Error\nPlease Drag a source file onto this EXE\n");
 		exit(1);
 	}
 	ReadTokens(fin, T);
