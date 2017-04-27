@@ -22,4 +22,4 @@ public:
 		}
 	}
 };
-_Stack STACK;
+_Stack MAINSTACK;

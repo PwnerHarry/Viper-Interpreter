@@ -130,7 +130,12 @@ void interpret_small_stmt(ast N);
 void interpret_compound_stmt(ast N);
 void interpret_if_stmt(ast N);
 void interpret_test(ast N);
+void interpret_or_test(ast N);
+void interpret_and_test(ast N);
+void interpret_not_test(ast N);
+void interpret_comparison(ast N);
 void interpret_suite(ast N);
+void interpret_suite_sub(ast N);
 void interpret_if_test_sub(ast N);
 void interpret_pass_stmt(ast N);
 void interpret_flow_stmt(ast N);
@@ -394,47 +399,47 @@ compound_stmt:
 
 comp_op:
 	"<" {
-		$<AST>$ = newnode("comp_op", NUMBER);
+		$<AST>$ = newnode("comp_op", 1);
 		$<AST>$->Value.Number = LESS;
 		fout_diag << "BISON\tcomp_op : \"<\"\n";
 	}|
 	">" {
-		$<AST>$ = newnode("comp_op", NUMBER);
+		$<AST>$ = newnode("comp_op", 2);
 		$<AST>$->Value.Number = GREATER;
 		fout_diag << "BISON\tcomp_op : \">\"\n";
 	}|
 	"==" {
-		$<AST>$ = newnode("comp_op", NUMBER);
+		$<AST>$ = newnode("comp_op", 3);
 		$<AST>$->Value.Number = EQEQUAL;
 		fout_diag << "BISON\tcomp_op : \"==\"\n";
 	}|
 	">=" {
-		$<AST>$ = newnode("comp_op", NUMBER);
+		$<AST>$ = newnode("comp_op", 4);
 		$<AST>$->Value.Number = GREATEREQUAL;
 		fout_diag << "BISON\tcomp_op : \">=\"\n";
 	}|
 	"<=" {
-		$<AST>$ = newnode("comp_op", NUMBER);
+		$<AST>$ = newnode("comp_op", 5);
 		$<AST>$->Value.Number = LESSEQUAL;
 		fout_diag << "BISON\tcomp_op : \"<=\"\n";
 	}|
 	"<>" {
-		$<AST>$ = newnode("comp_op", NUMBER);
+		$<AST>$ = newnode("comp_op", 6);
 		$<AST>$->Value.Number = NOTEQUAL;
 		fout_diag << "BISON\tcomp_op : \"<>\"\n";
 	}|
 	"!=" {
-		$<AST>$ = newnode("comp_op", NUMBER);
+		$<AST>$ = newnode("comp_op", 7);
 		$<AST>$->Value.Number = NOTEQUAL;
 		fout_diag << "BISON\tcomp_op : \"!=\"\n";
 	}|
 	"is" {
-		$<AST>$ = newnode("comp_op", NUMBER);
+		$<AST>$ = newnode("comp_op", 8);
 		$<AST>$->Value.Number = IS;
 		fout_diag << "BISON\tcomp_op : \"is\"\n";
 	}|
 	"is" "not" {
-		$<AST>$ = newnode("comp_op", NUMBER);
+		$<AST>$ = newnode("comp_op", 9);
 		$<AST>$->Value.Number = -2;
 		fout_diag << "BISON\tcomp_op : \"is\" \"not\"\n";
 	};
@@ -579,6 +584,7 @@ parameters				: "(" ")"																{fout_diag << "BISON\tparameters : \"(\" 
 						;
 pass_stmt:
 	"pass" {
+		$<AST>$ = newnode("pass_stmt", 1);
 		fout_diag << "BISON\tflow_stmt : return_stmt\n";
 	};
 
@@ -639,12 +645,12 @@ small_stmt:
 		fout_diag << "BISON\tsmall_stmt : expr_stmt\n";
 	}|
 	pass_stmt {
-		$<AST>$ = newnode("expr_stmt", 2);
+		$<AST>$ = newnode("small_stmt", 2);
 		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tsmall_stmt : pass_stmt\n";
 	}|
 	flow_stmt {
-		$<AST>$ = newnode("expr_stmt", 3);
+		$<AST>$ = newnode("small_stmt", 3);
 		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON\tsmall_stmt : flow_stmt\n";
 	};
@@ -692,9 +698,14 @@ suite:
 
 suite_sub:
 	stmt {
+		$<AST>$ = newnode("suite_sub", 1);
+		$<AST>$->r = $<AST>1;
 		fout_diag << "BISON\tsuite_sub : stmt\n";
 	}|
 	suite_sub stmt {
+		$<AST>$ = newnode("suite_sub", 2);
+		$<AST>$->l = $<AST>1;
+		$<AST>$->r = $<AST>2;
 		fout_diag << "BISON\tsuite_sub : suite_sub stmt\n";
 	};
 
