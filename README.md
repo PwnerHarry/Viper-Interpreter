@@ -1,4 +1,4 @@
-# ViperCompiler
+# Viper-Interpreter
 An interpreter for a subset of Python using different techs under Windows
 
 This project is still under developments, the features that have already been finished:
