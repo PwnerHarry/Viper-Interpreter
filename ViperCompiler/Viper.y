@@ -844,12 +844,10 @@ int main(int argc, char * argv[]) {
 	PrintTokens(T);
 	initTable();
 	yyparse();
-	fout_diag << "\n" << "PARSING PROCESS SUCCESS" << "\n";
 	fout_diag.close();
 	fout_diag.open("INTERPRETER.log", ios::out);
 	interpret_input();
 	disptable();
-	fout_diag << "\n" << "INTERPRETING PROCESS SUCCESS" << "\n";
 	fout_diag.close();
 	return 0;
 };

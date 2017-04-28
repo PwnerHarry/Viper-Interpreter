@@ -1,0 +1,6 @@
+y = True
+x = 3 ** (5 * 5 - 23) + y
+while x > 0:
+	print(x)
+	x = x - 1
+print('wtf')

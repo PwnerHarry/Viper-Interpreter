@@ -1,0 +1,7 @@
+x = 5
+if x == 7 or 2 < 1:
+	x = 6
+print(x)
+else:
+	x = 8
+print(x)
