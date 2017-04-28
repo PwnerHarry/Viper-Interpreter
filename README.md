@@ -17,4 +17,4 @@ How to run this:
 
 	Turn on your windows
 	Make sure that your g++ is in a directory the system environment variables as "Path"
-	put source file in the master folder, simply drag a source file (*.vi) onto Drag.exe
+	put source file in the master folder, simply drag a source file (*.vi) onto Viper.exe
