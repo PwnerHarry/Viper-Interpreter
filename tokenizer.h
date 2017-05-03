@@ -1,49 +1,3 @@
-void PrintTokens(TokenTable * T) {
-	system("CLS");
-	for (int i = 0; i < TOKEN_TABLE_SIZE && T->t[i].availability != 0; i++) {
-		fout_diag << T->t[i].lineno << "\t" << T->t[i].layer << "\t";
-		switch (T->t[i].type) {
-			case STRING:{
-				fout_diag << "STRING" << "\t" << T->t[i].Object.Value.String;
-				break;
-			}
-			case NUMBER:{
-				fout_diag << "NUMBER" << "\t" << T->t[i].Object.Value.Number;
-				break;
-			}
-			case CHAR:{
-				fout_diag << "CHAR" << "\t" << T->t[i].Object.Value.Char;
-				break;
-			}
-			case NAME:{
-				fout_diag << "NAME" << "\t" << T->t[i].Object.Value.String;
-				break;
-			}
-			case INDENT:{
-				fout_diag << "INDENT";
-				break;
-			}
-			case DEDENT:{
-				fout_diag << "DEDENT";
-				break;
-			}
-			case ENDMARKER:{
-				fout_diag << "ENDMARKER";
-				break;
-			}
-			case PRINT:{
-				fout_diag << "PRINT";
-				break;
-			}
-			default:{
-				fout_diag << T->t[i].Object.Value.String;
-				break;
-			}
-		}
-		fout_diag << endl;
-	}
-	fout_diag << endl;
-};
 int ReadTokens(ifstream &f, TokenTable * T) {
 	int layer = 0;
 	int Break = 0;
@@ -57,7 +11,7 @@ int ReadTokens(ifstream &f, TokenTable * T) {
 		f >> T->t[i].type;
 		T->t[i].layer = layer;
 		switch (T->t[i].type) {
-			case STRING:{
+			case VALUE_TYPE_STRING:{
 				char temp;
 				f.get(temp);
 				f.get(temp);
@@ -68,11 +22,11 @@ int ReadTokens(ifstream &f, TokenTable * T) {
 						T->t[i].Object.Value.String[j - 1] = '\0';
 				break;
 			}
-			case NUMBER:{
+			case VALUE_TYPE_NUMBER:{
 				f >> T->t[i].Object.Value.Number;
 				break;
 			}
-			case CHAR:{
+			case VALUE_TYPE_CHAR:{
 				char temp;
 				f.get(temp);
 				f.get(temp);
@@ -80,7 +34,7 @@ int ReadTokens(ifstream &f, TokenTable * T) {
 				f.get(temp);
 				break;
 			}
-			case NAME:{
+			case VALUE_TYPE_NAME:{
 				T->t[i].Object.Value.String = new char[64];
 				f >> T->t[i].Object.Value.String;
 				break;
@@ -133,45 +87,54 @@ int yylex() {
 	if (T->t[i].availability == 0)
 		return 0;
 	switch (T->t[i].type) {
-		case STRING:{
+		case VALUE_TYPE_STRING:{
 			yylval.String = T->t[i].Object.Value.String;
-			fout_diag << "FLEX\tSTRING\t" << yylval.String << endl;
+			fout_diag << green << "FLEX" << white << "\t" << "STRING" << "\t" << yylval.String << endl;
+			cout << green << "FLEX" << white << "\t" << "STRING" << "\t" << yylval.String << endl;
 			break;
 		}
-		case NUMBER:{
+		case VALUE_TYPE_NUMBER:{
 			yylval.Number = T->t[i].Object.Value.Number;
-			fout_diag << "FLEX\tNUMBER\t" << yylval.Number << endl;
+			fout_diag << green << "FLEX" << white << "\t" << "NUMBER" << "\t" << yylval.Number << endl;
+			cout << green << "FLEX" << white << "\t" << "NUMBER" << "\t" << yylval.Number << endl;
 			break;
 		}
-		case CHAR:{
+		case VALUE_TYPE_CHAR:{
 			yylval.Char = T->t[i].Object.Value.Char;
-			fout_diag << "FLEX\tCHAR\t" << yylval.Char << endl;
+			fout_diag << green << "FLEX" << white << "\t" << "CHAR" << "" << "\t" << yylval.Char << endl;
+			cout << green << "FLEX" << white << "\t" << "CHAR" << "" << "\t" << yylval.Char << endl;
 			break;
 		}
-		case NAME:{
+		case VALUE_TYPE_NAME:{
 			yylval.Name = T->t[i].Object.Value.String;
-			fout_diag << "FLEX\tNAME\t" << yylval.Name << endl;
+			fout_diag << green << "FLEX" << white << "\t" << "NAME" << "\t" << yylval.Name << endl;
+			cout << green << "FLEX" << white << "\t" << "NAME" << "\t" << yylval.Name << endl;
 			break;
 		}
 		case INDENT:{
-			fout_diag << "FLEX\tINDENT" << endl;
+			fout_diag << green << "FLEX" << white << "\t" << "INDENT" << endl;
+			cout << green << "FLEX" << white << "\t" << "INDENT" << endl;
 			break;
 		}
 		case DEDENT:{
-			fout_diag << "FLEX\tDEDENT" << endl;
+			fout_diag << green << "FLEX" << white << "\t" << "DEDENT" << endl;
+			cout << green << "FLEX" << white << "\t" << "DEDENT" << endl;
 			break;
 		}
 		case NEWLINE:{
-			fout_diag << "FLEX\tNEWLINE" << endl;
+			fout_diag << green << "FLEX" << white << "\t" << "NEWLINE" << endl;
+			cout << green << "FLEX" << white << "\t" << "NEWLINE" << endl;
 			break;
 		}
 		case ENDMARKER:{
-			fout_diag << "FLEX\tENDMARKER" << endl;
+			fout_diag << green << "FLEX" << white << "\t" << "ENDMARKER" << endl;
+			cout << green << "FLEX" << white << "\t" << "ENDMARKER" << endl;
 			break;
 		}
 		default:{
 			yylval.Name = T->t[i].Object.Value.String;
-			fout_diag << "FLEX\t" << yylval.Name << endl;
+			fout_diag << green << "FLEX" << white << "\t" << yylval.Name << endl;
+			cout << green << "FLEX" << white << "\t" << yylval.Name << endl;
 			break;
 		}
 	}

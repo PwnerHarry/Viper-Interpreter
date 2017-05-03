@@ -93,20 +93,20 @@ void interpret_print_stmt(ast N){
 	if (N->nodetype == 1){
 		interpret_expr(N->l);
 		if (N->l){
-			if (N->l->valuetype == NAME){
+			if (N->l->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->l->Value.Name);
 				if (!S){
 					fout_diag << "\t" << "ERROR" << "\t" << "CANNOT PRINT A NON-EXISTING VARIABLE" << "\n";
 					return;
 				}
 				else {
-					if (S->TYPE == NUMBER)
+					if (S->TYPE == VALUE_TYPE_NUMBER)
 						cout << S->VALUE.Number << "\n";
-					if (S->TYPE == CHAR)
+					if (S->TYPE == VALUE_TYPE_CHAR)
 						cout << S->VALUE.Char << "\n";
-					if (S->TYPE == STRING)
+					if (S->TYPE == VALUE_TYPE_STRING)
 						cout << S->VALUE.String << "\n";
-					if (S->TYPE == BOOL)
+					if (S->TYPE == VALUE_TYPE_BOOL)
 						if (S->VALUE.Bool)
 							cout << "True" << "\n";
 						else
@@ -114,16 +114,16 @@ void interpret_print_stmt(ast N){
 					goto End;
 				}
 			}
-			if (N->l->valuetype == NUMBER)
+			if (N->l->valuetype == VALUE_TYPE_NUMBER)
 				cout << N->l->Value.Number << "\n";
-			if (N->l->valuetype == BOOL)
+			if (N->l->valuetype == VALUE_TYPE_BOOL)
 				if (N->l->Value.Bool)
 					cout << "True" << "\n";
 				else
 					cout << "False" << "\n";
-			if (N->l->valuetype == STRING)
+			if (N->l->valuetype == VALUE_TYPE_STRING)
 				cout << N->l->Value.String << "\n";
-			if (N->l->valuetype == CHAR)
+			if (N->l->valuetype == VALUE_TYPE_CHAR)
 				cout << N->l->Value.Char << "\n";
 		}
 		else {
@@ -238,42 +238,42 @@ void interpret_or_test(ast N){
 		interpret_or_test(N->l);
 		interpret_and_test(N->r);
 		bool buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != BOOL) {
+			if (S->TYPE != VALUE_TYPE_BOOL) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "or_test IS FOR BOOLEANS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Bool;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != BOOL) {
+			if (S->TYPE != VALUE_TYPE_BOOL) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "or_test IS FOR BOOLEANS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Bool;
 		}
-		if (N->l->valuetype == BOOL)
+		if (N->l->valuetype == VALUE_TYPE_BOOL)
 			buff1 = N->l->Value.Bool;
-		if (N->r->valuetype == BOOL)
+		if (N->r->valuetype == VALUE_TYPE_BOOL)
 			buff2 = N->r->Value.Bool;
-		if (N->l->valuetype != BOOL && N->l->valuetype != NAME|| N->r->valuetype != BOOL && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_BOOL && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_BOOL && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "or_test IS FOR BOOLEANS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = BOOL;
+		N->valuetype = VALUE_TYPE_BOOL;
 		N->Value.Bool = buff1 || buff2;
 	}
 };
@@ -294,42 +294,42 @@ void interpret_and_test(ast N){
 		interpret_and_test(N->l);
 		interpret_not_test(N->r);
 		bool buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != BOOL) {
+			if (S->TYPE != VALUE_TYPE_BOOL) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "and_test IS FOR BOOLEANS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Bool;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != BOOL) {
+			if (S->TYPE != VALUE_TYPE_BOOL) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "and_test IS FOR BOOLEANS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Bool;
 		}
-		if (N->l->valuetype == BOOL)
+		if (N->l->valuetype == VALUE_TYPE_BOOL)
 			buff1 = N->l->Value.Bool;
-		if (N->r->valuetype == BOOL)
+		if (N->r->valuetype == VALUE_TYPE_BOOL)
 			buff2 = N->r->Value.Bool;
-		if (N->l->valuetype != BOOL && N->l->valuetype != NAME|| N->r->valuetype != BOOL && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_BOOL && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_BOOL && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "and_test IS FOR BOOLEANS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = BOOL;
+		N->valuetype = VALUE_TYPE_BOOL;
 		N->Value.Bool = buff1 && buff2;
 	}
 }
@@ -349,27 +349,27 @@ void interpret_not_test(ast N){
 	if (N->nodetype == 2) {//not_test : "not" not_test
 		interpret_not_test(N->l);
 		bool buff;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != BOOL) {
+			if (S->TYPE != VALUE_TYPE_BOOL) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "not_test IS FOR BOOLEANS ONLY" << "\n";
 				return;
 			}
 			buff = S->VALUE.Bool;
 		}
-		if (N->l->valuetype == BOOL)
+		if (N->l->valuetype == VALUE_TYPE_BOOL)
 			buff = N->l->Value.Bool;
-		if (N->l->valuetype != BOOL && N->l->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_BOOL && N->l->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "not_test IS FOR BOOLEANS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = BOOL;
+		N->valuetype = VALUE_TYPE_BOOL;
 		N->Value.Bool = !buff;
 	}
 }
@@ -391,41 +391,41 @@ void interpret_comparison(ast N){
 		interpret_expr(N->r);
 		if (N->j->nodetype == 1){//"<"
 			double buff1, buff2;
-			if (N->l->valuetype == NUMBER)
+			if (N->l->valuetype == VALUE_TYPE_NUMBER)
 				buff1 = N->l->Value.Number;
-			if (N->r->valuetype == NUMBER)
+			if (N->r->valuetype == VALUE_TYPE_NUMBER)
 				buff2 = N->r->Value.Number;
-			if (N->l->valuetype == NAME){
+			if (N->l->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->l->Value.Name);
 				if (!S) {
 					fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 					return;
 				}
-				if (S->TYPE != NUMBER) {
+				if (S->TYPE != VALUE_TYPE_NUMBER) {
 					fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 					fout_diag << "\t" << "ERROR" << "\t" << "comparison \"<\" IS FOR NUMBERS ONLY" << "\n";
 					return;
 				}
 				buff1 = S->VALUE.Number;
 			}
-			if (N->r->valuetype == NAME){
+			if (N->r->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->r->Value.Name);
 				if (!S) {
 					fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 					return;
 				}
-				if (S->TYPE != NUMBER) {
+				if (S->TYPE != VALUE_TYPE_NUMBER) {
 					fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 					fout_diag << "\t" << "ERROR" << "\t" << "comparison \"<\" IS FOR NUMBERS ONLY" << "\n";
 					return;
 				}
 				buff2 = S->VALUE.Number;
 			}
-			if (N->l->valuetype != NAME && N->l->valuetype != NUMBER ||N->r->valuetype != NAME && N->r->valuetype != NUMBER){
+			if (N->l->valuetype != VALUE_TYPE_NAME && N->l->valuetype != VALUE_TYPE_NUMBER ||N->r->valuetype != VALUE_TYPE_NAME && N->r->valuetype != VALUE_TYPE_NUMBER){
 				fout_diag << "\t" << "ERROR" << "\t" << "comparison \"<\" IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
-			N->valuetype = BOOL;
+			N->valuetype = VALUE_TYPE_BOOL;
 			if (buff1 < buff2)
 				N->Value.Bool = true;
 			else
@@ -433,41 +433,41 @@ void interpret_comparison(ast N){
 		}
 		if (N->j->nodetype == 2){//">"
 			double buff1, buff2;
-			if (N->l->valuetype == NUMBER)
+			if (N->l->valuetype == VALUE_TYPE_NUMBER)
 				buff1 = N->l->Value.Number;
-			if (N->r->valuetype == NUMBER)
+			if (N->r->valuetype == VALUE_TYPE_NUMBER)
 				buff2 = N->r->Value.Number;
-			if (N->l->valuetype == NAME){
+			if (N->l->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->l->Value.Name);
 				if (!S) {
 					fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 					return;
 				}
-				if (S->TYPE != NUMBER) {
+				if (S->TYPE != VALUE_TYPE_NUMBER) {
 					fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 					fout_diag << "\t" << "ERROR" << "\t" << "comparison \">\" IS FOR NUMBERS ONLY" << "\n";
 					return;
 				}
 				buff1 = S->VALUE.Number;
 			}
-			if (N->r->valuetype == NAME){
+			if (N->r->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->r->Value.Name);
 				if (!S) {
 					fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 					return;
 				}
-				if (S->TYPE != NUMBER) {
+				if (S->TYPE != VALUE_TYPE_NUMBER) {
 					fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 					fout_diag << "\t" << "ERROR" << "\t" << "comparison \">\" IS FOR NUMBERS ONLY" << "\n";
 					return;
 				}
 				buff2 = S->VALUE.Number;
 			}
-			if (N->l->valuetype != NAME && N->l->valuetype != NUMBER ||N->r->valuetype != NAME && N->r->valuetype != NUMBER){
+			if (N->l->valuetype != VALUE_TYPE_NAME && N->l->valuetype != VALUE_TYPE_NUMBER ||N->r->valuetype != VALUE_TYPE_NAME && N->r->valuetype != VALUE_TYPE_NUMBER){
 				fout_diag << "\t" << "ERROR" << "\t" << "comparison \">\" IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
-			N->valuetype = BOOL;
+			N->valuetype = VALUE_TYPE_BOOL;
 			if (buff1 > buff2)
 				N->Value.Bool = true;
 			else
@@ -475,41 +475,41 @@ void interpret_comparison(ast N){
 		}
 		if (N->j->nodetype == 3){//"=="
 			double buff1, buff2;
-			if (N->l->valuetype == NUMBER)
+			if (N->l->valuetype == VALUE_TYPE_NUMBER)
 				buff1 = N->l->Value.Number;
-			if (N->r->valuetype == NUMBER)
+			if (N->r->valuetype == VALUE_TYPE_NUMBER)
 				buff2 = N->r->Value.Number;
-			if (N->l->valuetype == NAME){
+			if (N->l->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->l->Value.Name);
 				if (!S) {
 					fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 					return;
 				}
-				if (S->TYPE != NUMBER) {
+				if (S->TYPE != VALUE_TYPE_NUMBER) {
 					fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 					fout_diag << "\t" << "ERROR" << "\t" << "comparison \"==\" IS FOR NUMBERS ONLY" << "\n";
 					return;
 				}
 				buff1 = S->VALUE.Number;
 			}
-			if (N->r->valuetype == NAME){
+			if (N->r->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->r->Value.Name);
 				if (!S) {
 					fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 					return;
 				}
-				if (S->TYPE != NUMBER) {
+				if (S->TYPE != VALUE_TYPE_NUMBER) {
 					fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 					fout_diag << "\t" << "ERROR" << "\t" << "comparison \"==\" IS FOR NUMBERS ONLY" << "\n";
 					return;
 				}
 				buff2 = S->VALUE.Number;
 			}
-			if (N->l->valuetype != NAME && N->l->valuetype != NUMBER ||N->r->valuetype != NAME && N->r->valuetype != NUMBER){
+			if (N->l->valuetype != VALUE_TYPE_NAME && N->l->valuetype != VALUE_TYPE_NUMBER ||N->r->valuetype != VALUE_TYPE_NAME && N->r->valuetype != VALUE_TYPE_NUMBER){
 				fout_diag << "\t" << "ERROR" << "\t" << "comparison \"==\" IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
-			N->valuetype = BOOL;
+			N->valuetype = VALUE_TYPE_BOOL;
 			if (buff1 == buff2)
 				N->Value.Bool = true;
 			else
@@ -517,41 +517,41 @@ void interpret_comparison(ast N){
 		}
 		if (N->j->nodetype == 4){//">="
 			double buff1, buff2;
-			if (N->l->valuetype == NUMBER)
+			if (N->l->valuetype == VALUE_TYPE_NUMBER)
 				buff1 = N->l->Value.Number;
-			if (N->r->valuetype == NUMBER)
+			if (N->r->valuetype == VALUE_TYPE_NUMBER)
 				buff2 = N->r->Value.Number;
-			if (N->l->valuetype == NAME){
+			if (N->l->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->l->Value.Name);
 				if (!S) {
 					fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 					return;
 				}
-				if (S->TYPE != NUMBER) {
+				if (S->TYPE != VALUE_TYPE_NUMBER) {
 					fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 					fout_diag << "\t" << "ERROR" << "\t" << "comparison \">=\" IS FOR NUMBERS ONLY" << "\n";
 					return;
 				}
 				buff1 = S->VALUE.Number;
 			}
-			if (N->r->valuetype == NAME){
+			if (N->r->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->r->Value.Name);
 				if (!S) {
 					fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 					return;
 				}
-				if (S->TYPE != NUMBER) {
+				if (S->TYPE != VALUE_TYPE_NUMBER) {
 					fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 					fout_diag << "\t" << "ERROR" << "\t" << "comparison \">=\" IS FOR NUMBERS ONLY" << "\n";
 					return;
 				}
 				buff2 = S->VALUE.Number;
 			}
-			if (N->l->valuetype != NAME && N->l->valuetype != NUMBER ||N->r->valuetype != NAME && N->r->valuetype != NUMBER){
+			if (N->l->valuetype != VALUE_TYPE_NAME && N->l->valuetype != VALUE_TYPE_NUMBER ||N->r->valuetype != VALUE_TYPE_NAME && N->r->valuetype != VALUE_TYPE_NUMBER){
 				fout_diag << "\t" << "ERROR" << "\t" << "comparison \">=\" IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
-			N->valuetype = BOOL;
+			N->valuetype = VALUE_TYPE_BOOL;
 			if (buff1 >= buff2)
 				N->Value.Bool = true;
 			else
@@ -559,41 +559,41 @@ void interpret_comparison(ast N){
 		}
 		if (N->j->nodetype == 5){//"<="
 			double buff1, buff2;
-			if (N->l->valuetype == NUMBER)
+			if (N->l->valuetype == VALUE_TYPE_NUMBER)
 				buff1 = N->l->Value.Number;
-			if (N->r->valuetype == NUMBER)
+			if (N->r->valuetype == VALUE_TYPE_NUMBER)
 				buff2 = N->r->Value.Number;
-			if (N->l->valuetype == NAME){
+			if (N->l->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->l->Value.Name);
 				if (!S) {
 					fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 					return;
 				}
-				if (S->TYPE != NUMBER) {
+				if (S->TYPE != VALUE_TYPE_NUMBER) {
 					fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 					fout_diag << "\t" << "ERROR" << "\t" << "comparison \"<=\" IS FOR NUMBERS ONLY" << "\n";
 					return;
 				}
 				buff1 = S->VALUE.Number;
 			}
-			if (N->r->valuetype == NAME){
+			if (N->r->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->r->Value.Name);
 				if (!S) {
 					fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 					return;
 				}
-				if (S->TYPE != NUMBER) {
+				if (S->TYPE != VALUE_TYPE_NUMBER) {
 					fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 					fout_diag << "\t" << "ERROR" << "\t" << "comparison \"<=\" IS FOR NUMBERS ONLY" << "\n";
 					return;
 				}
 				buff2 = S->VALUE.Number;
 			}
-			if (N->l->valuetype != NAME && N->l->valuetype != NUMBER ||N->r->valuetype != NAME && N->r->valuetype != NUMBER){
+			if (N->l->valuetype != VALUE_TYPE_NAME && N->l->valuetype != VALUE_TYPE_NUMBER ||N->r->valuetype != VALUE_TYPE_NAME && N->r->valuetype != VALUE_TYPE_NUMBER){
 				fout_diag << "\t" << "ERROR" << "\t" << "comparison \"<=\" IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
-			N->valuetype = BOOL;
+			N->valuetype = VALUE_TYPE_BOOL;
 			if (buff1 <= buff2)
 				N->Value.Bool = true;
 			else
@@ -601,41 +601,41 @@ void interpret_comparison(ast N){
 		}
 		if (N->j->nodetype == 6 || N->j->nodetype == 7){//"!=", "<>"
 			double buff1, buff2;
-			if (N->l->valuetype == NUMBER)
+			if (N->l->valuetype == VALUE_TYPE_NUMBER)
 				buff1 = N->l->Value.Number;
-			if (N->r->valuetype == NUMBER)
+			if (N->r->valuetype == VALUE_TYPE_NUMBER)
 				buff2 = N->r->Value.Number;
-			if (N->l->valuetype == NAME){
+			if (N->l->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->l->Value.Name);
 				if (!S) {
 					fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 					return;
 				}
-				if (S->TYPE != NUMBER) {
+				if (S->TYPE != VALUE_TYPE_NUMBER) {
 					fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 					fout_diag << "\t" << "ERROR" << "\t" << "comparison \"!=\" IS FOR NUMBERS ONLY" << "\n";
 					return;
 				}
 				buff1 = S->VALUE.Number;
 			}
-			if (N->r->valuetype == NAME){
+			if (N->r->valuetype == VALUE_TYPE_NAME){
 				SymTable S = searchTable(N->r->Value.Name);
 				if (!S) {
 					fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 					return;
 				}
-				if (S->TYPE != NUMBER) {
+				if (S->TYPE != VALUE_TYPE_NUMBER) {
 					fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 					fout_diag << "\t" << "ERROR" << "\t" << "comparison \"!=\" IS FOR NUMBERS ONLY" << "\n";
 					return;
 				}
 				buff2 = S->VALUE.Number;
 			}
-			if (N->l->valuetype != NAME && N->l->valuetype != NUMBER ||N->r->valuetype != NAME && N->r->valuetype != NUMBER){
+			if (N->l->valuetype != VALUE_TYPE_NAME && N->l->valuetype != VALUE_TYPE_NUMBER ||N->r->valuetype != VALUE_TYPE_NAME && N->r->valuetype != VALUE_TYPE_NUMBER){
 				fout_diag << "\t" << "ERROR" << "\t" << "comparison \"!=\" IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
-			N->valuetype = BOOL;
+			N->valuetype = VALUE_TYPE_BOOL;
 			if (buff1 != buff2)
 				N->Value.Bool = true;
 			else
@@ -713,7 +713,7 @@ void interpret_expr_stmt(ast N){
 		fout_diag << "\t" << "ERROR" << "\t" << "TIS A " << N->symbol << " NODE" << "\n";
 		return;
 	}
-	if (N->nodetype == 1) {//expr_stmt: NAME "=" expr
+	if (N->nodetype == 1) {//expr_stmt: VALUE_TYPE_NAME "=" expr
 		interpret_expr(N->r);
 		SymTable S = searchTable(N->l->Value.Name);
 		if (S){
@@ -747,37 +747,37 @@ void interpret_expr(ast N) {
 		interpret_expr(N->l);
 		interpret_xor_expr(N->r);
 		double buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "logical xor IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Number;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "logical xor IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Number;
 		}
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff1 = N->l->Value.Number;
-		if (N->r->valuetype == NUMBER)
+		if (N->r->valuetype == VALUE_TYPE_NUMBER)
 			buff2 = N->r->Value.Number;
-		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_NUMBER && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_NUMBER && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "logical xor IS FOR NUMBERS ONLY" << "\n";
 			return;
@@ -786,7 +786,7 @@ void interpret_expr(ast N) {
 			fout_diag << "\t" << "ERROR" << "\t" << "logical xor CAN ONLY PROCEED WITH INTEGERS" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = int(buff1) | int(buff2);
 	}
 };
@@ -807,37 +807,37 @@ void interpret_xor_expr(ast N) {
 		interpret_xor_expr(N->l);
 		interpret_and_expr(N->r);
 		double buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "logical xor IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Number;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "logical xor IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Number;
 		}
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff1 = N->l->Value.Number;
-		if (N->r->valuetype == NUMBER)
+		if (N->r->valuetype == VALUE_TYPE_NUMBER)
 			buff2 = N->r->Value.Number;
-		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_NUMBER && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_NUMBER && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "logical xor IS FOR NUMBERS ONLY" << "\n";
 			return;
@@ -846,7 +846,7 @@ void interpret_xor_expr(ast N) {
 			fout_diag << "\t" << "ERROR" << "\t" << "logical xor CAN ONLY PROCEED WITH INTEGERS" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = int(buff1) ^ int(buff2);
 	}
 };
@@ -867,37 +867,37 @@ void interpret_and_expr(ast N) {
 		interpret_and_expr(N->l);
 		interpret_shift_expr(N->r);
 		double buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "logical and IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Number;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "logical and IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Number;
 		}
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff1 = N->l->Value.Number;
-		if (N->r->valuetype == NUMBER)
+		if (N->r->valuetype == VALUE_TYPE_NUMBER)
 			buff2 = N->r->Value.Number;
-		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_NUMBER && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_NUMBER && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "logical and IS FOR NUMBERS ONLY" << "\n";
 			return;
@@ -906,7 +906,7 @@ void interpret_and_expr(ast N) {
 			fout_diag << "\t" << "ERROR" << "\t" << "logical and CAN ONLY PROCEED WITH INTEGERS" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = int(buff1) & int(buff2);
 	}
 };
@@ -927,37 +927,37 @@ void interpret_shift_expr(ast N) {
 		interpret_shift_expr(N->l);
 		interpret_arith_expr(N->r);
 		double buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "<< IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Number;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "<< IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Number;
 		}
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff1 = N->l->Value.Number;
-		if (N->r->valuetype == NUMBER)
+		if (N->r->valuetype == VALUE_TYPE_NUMBER)
 			buff2 = N->r->Value.Number;
-		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_NUMBER && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_NUMBER && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "<< IS FOR NUMBERS ONLY" << "\n";
 			return;
@@ -966,44 +966,44 @@ void interpret_shift_expr(ast N) {
 			fout_diag << "\t" << "ERROR" << "\t" << "DIGITS MOVE CAN ONLY PROCEED WITH INTEGERS" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = buff1 * pow(2, int(buff2));
 	}
 	if (N->nodetype == 3) {//shift_expr : shift_expr ">>" arith_expr
 		interpret_shift_expr(N->l);
 		interpret_arith_expr(N->r);
 		double buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << ">> IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Number;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << ">> IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Number;
 		}
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff1 = N->l->Value.Number;
-		if (N->r->valuetype == NUMBER)
+		if (N->r->valuetype == VALUE_TYPE_NUMBER)
 			buff2 = N->r->Value.Number;
-		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_NUMBER && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_NUMBER && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << ">> IS FOR NUMBERS ONLY" << "\n";
 			return;
@@ -1012,7 +1012,7 @@ void interpret_shift_expr(ast N) {
 			fout_diag << "\t" << "ERROR" << "\t" << "DIGITS MOVE CAN ONLY PROCEED WITH INTEGERS" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = buff1 / pow(2, int(buff2));
 	}
 };
@@ -1033,84 +1033,84 @@ void interpret_arith_expr(ast N) {
 		interpret_arith_expr(N->l);
 		interpret_term(N->r);
 		double buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "plus IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Number;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "plus IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Number;
 		}
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff1 = N->l->Value.Number;
-		if (N->r->valuetype == NUMBER)
+		if (N->r->valuetype == VALUE_TYPE_NUMBER)
 			buff2 = N->r->Value.Number;
-		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_NUMBER && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_NUMBER && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "plus IS FOR NUMBERS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = buff1 + buff2;
 	}
 	if (N->nodetype == 3) {//arith_expr : arith_expr "-" term
 		interpret_arith_expr(N->l);
 		interpret_term(N->r);
 		double buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "minus IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Number;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "minus IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Number;
 		}
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff1 = N->l->Value.Number;
-		if (N->r->valuetype == NUMBER)
+		if (N->r->valuetype == VALUE_TYPE_NUMBER)
 			buff2 = N->r->Value.Number;
-		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_NUMBER && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_NUMBER && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "minus IS FOR NUMBERS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = buff1 - buff2;
 	}
 };
@@ -1131,121 +1131,121 @@ void interpret_term(ast N) {
 		interpret_term(N->l);
 		interpret_factor(N->r);
 		double buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "mult IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Number;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "mult IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Number;
 		}
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff1 = N->l->Value.Number;
-		if (N->r->valuetype == NUMBER)
+		if (N->r->valuetype == VALUE_TYPE_NUMBER)
 			buff2 = N->r->Value.Number;
-		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_NUMBER && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_NUMBER && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "mult IS FOR NUMBERS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = buff1 * buff2;
 	}
 	if (N->nodetype == 3) {//term : term "/" factor
 		interpret_term(N->l);
 		interpret_factor(N->r);
 		double buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "didv IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Number;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "didv IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Number;
 		}
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff1 = N->l->Value.Number;
-		if (N->r->valuetype == NUMBER)
+		if (N->r->valuetype == VALUE_TYPE_NUMBER)
 			buff2 = N->r->Value.Number;
-		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_NUMBER && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_NUMBER && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "didv IS FOR NUMBERS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = buff1 / buff2;
 	}
 	if (N->nodetype == 4) {//term : term "%" factor
 		interpret_term(N->l);
 		interpret_factor(N->r);
 		double buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "mod IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Number;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "mod IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Number;
 		}
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff1 = N->l->Value.Number;
-		if (N->r->valuetype == NUMBER)
+		if (N->r->valuetype == VALUE_TYPE_NUMBER)
 			buff2 = N->r->Value.Number;
-		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_NUMBER && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_NUMBER && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "mod IS FOR NUMBERS ONLY" << "\n";
 			return;
@@ -1254,49 +1254,49 @@ void interpret_term(ast N) {
 			fout_diag << "\t" << "ERROR" << "\t" << "mod IS FOR INTEGERS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = int(buff1) % int(buff2);
 	}
 	if (N->nodetype == 5) {//term : term "//" factor
 		interpret_term(N->l);
 		interpret_factor(N->r);
 		double buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "fdv IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Number;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "fdv IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Number;
 		}
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff1 = N->l->Value.Number;
-		if (N->r->valuetype == NUMBER)
+		if (N->r->valuetype == VALUE_TYPE_NUMBER)
 			buff2 = N->r->Value.Number;
-		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_NUMBER && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_NUMBER && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "fdv IS FOR NUMBERS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = floor(buff1 / buff2);
 	}
 };
@@ -1316,15 +1316,15 @@ void interpret_factor(ast N) {
 	if (N->nodetype == 2) {//factor : "+" factor
 		interpret_factor(N->l);
 		double buff;
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff = N->l->Value.Number;
-		else if (N->l->valuetype == NAME) {
+		else if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "factor IS FOR NUMBERS ONLY" << "\n";
 				return;
@@ -1335,21 +1335,21 @@ void interpret_factor(ast N) {
 			fout_diag << "\t" << "ERROR" << "\t" << "factor IS FOR NUMBERS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = buff;
 	}
 	if (N->nodetype == 3) {//factor : "-" factor
 		interpret_factor(N->l);
 		double buff;
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff = N->l->Value.Number;
-		else if (N->l->valuetype == NAME) {
+		else if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "factor IS FOR NUMBERS ONLY" << "\n";
 				return;
@@ -1360,7 +1360,7 @@ void interpret_factor(ast N) {
 			fout_diag << "\t" << "ERROR" << "\t" << "factor IS FOR NUMBERS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = -1.0 * buff;
 	}
 };
@@ -1381,42 +1381,42 @@ void interpret_power(ast N) {
 		interpret_atom_expr(N->l);
 		interpret_factor(N->r);
 		double buff1, buff2;
-		if (N->l->valuetype == NAME) {
+		if (N->l->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->l->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "power IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff1 = S->VALUE.Number;
 		}
-		if (N->r->valuetype == NAME) {
+		if (N->r->valuetype == VALUE_TYPE_NAME) {
 			SymTable S = searchTable(N->r->Value.Name);
 			if (!S) {
 				fout_diag << "\t" << "ERROR" << "\t" << "NOT AN EXISTING VARIABLE, HAS NO VALUES" << "\n";
 				return;
 			}
-			if (S->TYPE != NUMBER) {
+			if (S->TYPE != VALUE_TYPE_NUMBER) {
 				fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 				fout_diag << "\t" << "ERROR" << "\t" << "power IS FOR NUMBERS ONLY" << "\n";
 				return;
 			}
 			buff2 = S->VALUE.Number;
 		}
-		if (N->l->valuetype == NUMBER)
+		if (N->l->valuetype == VALUE_TYPE_NUMBER)
 			buff1 = N->l->Value.Number;
-		if (N->r->valuetype == NUMBER)
+		if (N->r->valuetype == VALUE_TYPE_NUMBER)
 			buff2 = N->r->Value.Number;
-		if (N->l->valuetype != NUMBER && N->l->valuetype != NAME|| N->r->valuetype != NUMBER && N->r->valuetype != NAME) {
+		if (N->l->valuetype != VALUE_TYPE_NUMBER && N->l->valuetype != VALUE_TYPE_NAME|| N->r->valuetype != VALUE_TYPE_NUMBER && N->r->valuetype != VALUE_TYPE_NAME) {
 			fout_diag << "\t" << "ERROR" << "\t" << "EXISTING VARIABLE HAS INCOMPATIBLE TYPE" << "\n";
 			fout_diag << "\t" << "ERROR" << "\t" << "power IS FOR NUMBERS ONLY" << "\n";
 			return;
 		}
-		N->valuetype = NUMBER;
+		N->valuetype = VALUE_TYPE_NUMBER;
 		N->Value.Number = pow(buff1, buff2);
 	}
 };

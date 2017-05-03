@@ -3,10 +3,10 @@ SymTable initTable() {
 	SYMTABLE = T;
 	return SYMTABLE;
 };
-SymTable searchTable(char * NAME) {
+SymTable searchTable(char * VALUE_TYPE_NAME) {
 	SymTable T = SYMTABLE;
 	while (T) {
-		if (T->NAME && !strcmp(T->NAME, NAME))
+		if (T->VALUE_TYPE_NAME && !strcmp(T->VALUE_TYPE_NAME, VALUE_TYPE_NAME))
 			return T;
 		else
 			T = T->NEXT;
@@ -15,7 +15,7 @@ SymTable searchTable(char * NAME) {
 };
 SymTable addEntry(char * SYMNAME, int BEGIN, int END, int TYPE) {
 	SymTable T = new symentry;
-	T->NAME = SYMNAME;
+	T->VALUE_TYPE_NAME = SYMNAME;
 	T->LIMITS[0] = BEGIN;
 	T->LIMITS[1] = END;
 	T->TYPE = TYPE;
@@ -26,24 +26,24 @@ SymTable addEntry(char * SYMNAME, int BEGIN, int END, int TYPE) {
 void disptable(){
 	SymTable S = SYMTABLE;
 	fout_diag << "SYMBOL TABLE" << "\n";
-	fout_diag << "NAME" << "\t" << "LBTM" << "\t" << "LTOP" << "\t" << "TYPE" << "\t" << "VALUE" << "\n";
+	fout_diag << "VALUE_TYPE_NAME" << "\t" << "LBTM" << "\t" << "LTOP" << "\t" << "TYPE" << "\t" << "VALUE" << "\n";
 	while (S) {
 		if (S->TYPE){
-			fout_diag << S->NAME << "\t" << S->LIMITS[0] << "\t" << S->LIMITS[1] << "\t" << inttype(S->TYPE) << "\t";
+			fout_diag << S->VALUE_TYPE_NAME << "\t" << S->LIMITS[0] << "\t" << S->LIMITS[1] << "\t" << inttype(S->TYPE) << "\t";
 			switch (S->TYPE) {
-				case NUMBER:{
+				case VALUE_TYPE_NUMBER:{
 					fout_diag << S->VALUE.Number << "\n";
 					break;
 				}
-				case STRING:{
+				case VALUE_TYPE_STRING:{
 					fout_diag << S->VALUE.String << "\n";
 					break;
 				}
-				case CHAR:{
+				case VALUE_TYPE_CHAR:{
 					fout_diag << S->VALUE.Char << "\n";
 					break;
 				}
-				case BOOL:{
+				case VALUE_TYPE_BOOL:{
 					if (S->VALUE.Bool)
 						fout_diag << "True" << "\n";
 					else

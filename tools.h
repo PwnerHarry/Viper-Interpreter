@@ -6,33 +6,33 @@ char * inttype(int type){
 			return R;
 			break;
 		}
-		case NUMBER:{
+		case VALUE_TYPE_NUMBER:{
 			char * R = new char[32];
-			strcpy(R, "NUMBER");
+			strcpy(R, "VALUE_TYPE_NUMBER");
 			return R;
 			break;
 		}
-		case STRING:{
+		case VALUE_TYPE_STRING:{
 			char * R = new char[32];
-			strcpy(R, "STRING");
+			strcpy(R, "VALUE_TYPE_STRING");
 			return R;
 			break;
 		}
-		case CHAR:{
+		case VALUE_TYPE_CHAR:{
 			char * R = new char[32];
-			strcpy(R, "CHAR");
+			strcpy(R, "VALUE_TYPE_CHAR");
 			return R;
 			break;
 		}
-		case NAME:{
+		case VALUE_TYPE_NAME:{
 			char * R = new char[32];
-			strcpy(R, "NAME");
+			strcpy(R, "VALUE_TYPE_NAME");
 			return R;
 			break;
 		}
-		case BOOL:{
+		case VALUE_TYPE_BOOL:{
 			char * R = new char[32];
-			strcpy(R, "BOOL");
+			strcpy(R, "VALUE_TYPE_BOOL");
 			return R;
 			break;
 		}

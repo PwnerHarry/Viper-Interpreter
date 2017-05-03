@@ -5,6 +5,7 @@
 #include "fstream"
 #include "math.h"
 #include "string.h"
+#include "color.h"
 
 using namespace std;
 ofstream fout_diag("PARSER.log", ios::out);
@@ -84,16 +85,17 @@ public:
 typedef asn * ast;
 ast ROOT = 0;
 ast newnode(char * symbol, int nodetype, int valuetype = 0);
+ast newnet(char * symbol, int nodetype, ast L = 0, ast R = 0, ast J = 0);
 /**/
 class symentry {
 public:
-	char * NAME;
+	char * VALUE_TYPE_NAME;
 	int LIMITS[2];
 	int TYPE;
 	SValue VALUE;
 	symentry * NEXT;
 	symentry() {
-		NAME = NULL;
+		VALUE_TYPE_NAME = NULL;
 		TYPE = 0;
 		VALUE.Number = 0;
 		LIMITS[0] = -1;
@@ -104,7 +106,7 @@ public:
 typedef symentry * SymTable;
 SymTable SYMTABLE = 0;
 SymTable initTable();
-SymTable searchTable(char * NAME);
+SymTable searchTable(char * VALUE_TYPE_NAME);
 void disptable();
 SymTable addEntry(char * SYMNAME, int BEGIN, int END, int TYPE);
 /**/
@@ -165,17 +167,17 @@ _Stack MAINSTACK;
 /**/
 %}
 %define api.value.type		{union YYSTYPE}
-%token	<Number>			NUMBER
-%token	<String>			STRING
-%token	<Name>				NAME
-%token	<Char>				CHAR
-%token	<Bool>				BOOL
+%token	<Number>			VALUE_TYPE_NUMBER
+%token	<String>			VALUE_TYPE_STRING
+%token	<Name>				VALUE_TYPE_NAME
+%token	<Char>				VALUE_TYPE_CHAR
+%token	<Bool>				VALUE_TYPE_BOOL
 %token	INDENT
 %token	DEDENT
 %token	ENDMARKER
 %token	UNKNOWN
-%token	TRUE				"True"
-%token	FALSE				"False"
+%token	BOOL_TRUE			"True"
+%token	BOOL_FALSE			"False"
 %token	ELLIPSIS			"..."
 %token	LBRACE				"}"
 %token	RBRACE				"{"
@@ -248,35 +250,35 @@ _Stack MAINSTACK;
 %%
 input:
 	file_input ENDMARKER {
-		$<AST>$ = newnode("input", 1, 0);
-		$<AST>$->l = $<AST>1;
+		$<AST>$ = newnet("input", 1, $<AST>1);
 		ROOT = $<AST>$;
-		fout_diag << "BISON\tinput : file_input ENDMARKER\n";
+		fout_diag << "BISON" << "\t" << "input : file_input ENDMARKER" << endl;
+		cout << red << "BISON" << white << "\t" << "input : file_input ENDMARKER" << endl;
+		cout << blue << "THE SYNTAX OF THE SOURCE FILE IS PERFECT" << endl;
 	};
 	
 and_expr:
 	shift_expr {
-		$<AST>$ = newnode("and_expr", 1);
-		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tand_expr : shift_expr\n";
+		$<AST>$ = newnet("and_expr", 1, $<AST>1);
+		fout_diag << "BISON" << "\t" << "and_expr : shift_expr" << endl;
+		cout << red << "BISON" << white << "\t" << "and_expr : shift_expr" << endl;
 	}|
 	and_expr "&" shift_expr {
-		$<AST>$ = newnode("and_expr", 2);
-		$<AST>$->l = $<AST>1;
-		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\tand_expr : and_expr \"&\" shift_expr\n";
+		$<AST>$ = newnet("and_expr", 2, $<AST>1, $<AST>3);
+		fout_diag << "BISON" << "\t" << "and_expr : and_expr \"&\" shift_expr" << endl;
+		cout << red << "BISON" << white << "\t" << "and_expr : and_expr \"&\" shift_expr" << endl;
 	};
 
 and_test:
 	not_test {
-		$<AST>$ = newnode("and_test", 1);
-		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tand_test : not_test\n";
+		$<AST>$ = newnet("and_test", 1, $<AST>1);
+		fout_diag << "BISON" << "\t" << "and_test : not_test" << endl;
+		cout << red << "BISON" << white << "\t" << "and_test : not_test" << endl;
 	}|
 	and_test "and" not_test {
-		$<AST>$ = newnode("and_test", 2);
-		$<AST>$->l = $<AST>1;
-		$<AST>$->r = $<AST>3;
+		$<AST>$ = newnet("and_test", 2, $<AST>1, $<AST>3);
+		fout_diag << "BISON" << "\t" << "and_test : and_test \"and\" not_test" << endl;
+		cout << red << "BISON" << white << "\t" << "and_test : and_test \"and\" not_test" << endl;
 	};
 
 arglist					: arglist_sub
@@ -285,278 +287,246 @@ arglist					: arglist_sub
 arglist_sub				: argument
 						| arglist_sub "," argument
 						;
-argument:
-	test {
-		fout_diag << "BISON\targument : test\n";
-	}|
-	test "=" test
-	|
-	"**" test
-	|
-	"*" test 
-	;
+argument: test | test "=" test | "**" test | "*" test ;
 
 arith_expr:
 	term {
-		$<AST>$ = newnode("arith_expr", 1);
-		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tarith_expr : term\n";
+		$<AST>$ = newnet("arith_expr", 1, $<AST>1);
+		fout_diag << "BISON" << "\t" << "arith_expr : term" << endl;
+		cout << red << "BISON" << white << "\t" << "arith_expr : term" << endl;
 	}|
 	arith_expr "+" term {
-		$<AST>$ = newnode("arith_expr", 2);
-		$<AST>$->l = $<AST>1;
-		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\tarith_expr : arith_expr \"+\" term\n";
+		$<AST>$ = newnet("arith_expr", 2, $<AST>1, $<AST>3);
+		fout_diag << "BISON" << "\t" << "arith_expr : arith_expr \"+\" term" << endl;
+		cout << red << "BISON" << white << "\t" << "arith_expr : arith_expr \"+\" term" << endl;
 	}|
 	arith_expr "-" term {
-		$<AST>$ = newnode("arith_expr", 3);
-		$<AST>$->l = $<AST>1;
-		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\tarith_expr : arith_expr \"-\" term\n";
+		$<AST>$ = newnet("arith_expr", 3, $<AST>1, $<AST>3);
+		fout_diag << "BISON" << "\t" << "arith_expr : arith_expr \"-\" term" << endl;
+		cout << red << "BISON" << white << "\t" << "arith_expr : arith_expr \"-\" term" << endl;
 	};
 
 atom:
 	"True" {
-		$<AST>$ = newnode("atom", 1, BOOL);
+		$<AST>$ = newnode("atom", 1, VALUE_TYPE_BOOL);
 		$<AST>$->Value.Bool = true;
+		fout_diag << "BISON" << "\t" << "atom : \"True\"" << endl;
+		cout << red << "BISON" << white << "\t" << "atom : \"True\"" << endl;
 	}|
 	"False" {
-		$<AST>$ = newnode("atom", 2, BOOL);
+		$<AST>$ = newnode("atom", 2, VALUE_TYPE_BOOL);
 		$<AST>$->Value.Bool = false;
+		fout_diag << "BISON" << "\t" << "atom : \"False\"" << endl;
+		cout << red << "BISON" << white << "\t" << "atom : \"False\"" << endl;
 	}|
-	NAME {
-		$<AST>$ = newnode("atom", 3, NAME);
+	VALUE_TYPE_NAME {
+		$<AST>$ = newnode("atom", 3, VALUE_TYPE_NAME);
 		$<AST>$->Value.Name = $<Name>1;
-		fout_diag << "BISON\tatom : NAME\n";
+		fout_diag << "BISON" << "\t" << "atom : VALUE_TYPE_NAME" << endl;
+		cout << red << "BISON" << white << "\t" << "atom : VALUE_TYPE_NAME" << endl;
 	}|
-	STRING {
-		$<AST>$ = newnode("atom", 4, STRING);
+	VALUE_TYPE_STRING {
+		$<AST>$ = newnode("atom", 4, VALUE_TYPE_STRING);
 		$<AST>$->Value.String = $<String>1;
-		fout_diag << "BISON\tatom : STRING\n";
+		fout_diag << "BISON" << "\t" << "atom : VALUE_TYPE_STRING" << endl;
+		cout << red << "BISON" << white << "\t" << "atom : VALUE_TYPE_STRING" << endl;
 	}|
-	CHAR {
-		$<AST>$ = newnode("atom", 5, CHAR);
+	VALUE_TYPE_CHAR {
+		$<AST>$ = newnode("atom", 5, VALUE_TYPE_CHAR);
 		$<AST>$->Value.Char = $<Char>1;
-		fout_diag << "BISON\tatom : NUMBER\n";
+		fout_diag << "BISON" << "\t" << "atom : VALUE_TYPE_NUMBER" << endl;
+		cout << red << "BISON" << white << "\t" << "atom : VALUE_TYPE_CHAR" << endl;
 	}|
-	NUMBER {
-		$<AST>$ = newnode("atom", 6, NUMBER);
+	VALUE_TYPE_NUMBER {
+		$<AST>$ = newnode("atom", 6, VALUE_TYPE_NUMBER);
 		$<AST>$->Value.Number = $<Number>1;
-		fout_diag << "BISON\tatom : NUMBER\n";
+		fout_diag << "BISON" << "\t" << "atom : VALUE_TYPE_NUMBER" << endl;
+		cout << red << "BISON" << white << "\t" << "atom : VALUE_TYPE_NUMBER" << endl;
 	};
 
 atom_expr:
 	atom {
-		$<AST>$ = newnode("atom_expr", 1);
-		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tatom_expr : atom\n";
+		$<AST>$ = newnet("atom_expr", 1, $<AST>1);
+		fout_diag << "BISON" << "\t" << "atom_expr : atom" << endl;
+		cout << red << "BISON" << white << "\t" << "atom_expr : atom" << endl;
 	}|
 	"(" expr ")" {
-		$<AST>$ = newnode("atom_expr", 2);
-		$<AST>$->l = $<AST>2;
-		fout_diag << "BISON\tatom_expr : \"(\" expr \")\"\n";
-	}|
-	atom trailer_plus {
-		fout_diag << "BISON\tatom_expr : atom trailer_plus\n";		
-	};
+		$<AST>$ = newnet("atom_expr", 2, $<AST>2);
+		fout_diag << "BISON" << "\t" << "atom_expr : \"(\" expr \")\"" << endl;
+		cout << red << "BISON" << white << "\t" << "atom_expr : \"(\" expr \")\"" << endl;
+	}| atom trailer_plus ;
 
-break_stmt:
-	"break" {
-		$<AST>$ = newnode("break_stmt", 1);
-	};
+break_stmt : "break" ;
 
 classdef:
-	"class" NAME ":" suite {
-		fout_diag << "BISON\tclassdef : \"class\" NAME : suite\n";
-	}|
-	"class" NAME "(" ")" ":" suite
-	|
-	"class" NAME "(" arglist ")" ":" suite
-	;
+	"class" VALUE_TYPE_NAME ":" suite | "class" VALUE_TYPE_NAME "(" ")" ":" suite |	"class" VALUE_TYPE_NAME "(" arglist ")" ":" suite ;
 
 comparison:
 	expr {
-		$<AST>$ = newnode("comparison", 1);
-		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tcomparison : expr\n";
+		$<AST>$ = newnet("comparison", 1, $<AST>1);
+		fout_diag << "BISON" << "\t" << "comparison : expr" << endl;
+		cout << red << "BISON" << white << "\t" << "comparison : expr" << endl;
 	}|
 	comparison comp_op expr {
-		$<AST>$ = newnode("comparison", 2);
-		$<AST>$->l = $<AST>1;
-		$<AST>$->r = $<AST>3;
-		$<AST>$->j = $<AST>2;
-		fout_diag << "BISON\tcomparison : comparison comp_op expr\n";
+		$<AST>$ = newnet("comparison", 2, $<AST>1, $<AST>3, $<AST>2);
+		fout_diag << "BISON" << "\t" << "comparison : comparison comp_op expr" << endl;
+		cout << red << "BISON" << white << "\t" << "comparison : comparison comp_op expr" << endl;
 	};
 
 compound_stmt:
 	if_stmt {
-		$<AST>$ = newnode("compound_stmt", 1);
-		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tcompound_stmt : if_stmt\n";
+		$<AST>$ = newnet("compound_stmt", 1, $<AST>1);
+		fout_diag << "BISON" << "\t" << "compound_stmt : if_stmt" << endl;
+		cout << red << "BISON" << white << "\t" << "compound_stmt : if_stmt" << endl;
 	}|
 	while_stmt{
 		$<AST>$ = newnode("compound_stmt", 2);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tcompound_stmt : while_stmt\n";
-	}|
-	funcdef {
-		$<AST>$ = newnode("compound_stmt", 3);
-		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tcompound_stmt : funcdef\n";
-	}|
-	classdef{
-		$<AST>$ = newnode("compound_stmt", 4);
-		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tcompound_stmt : classdef\n";
-	};
+		fout_diag << "BISON" << "\t" << "compound_stmt : while_stmt" << endl;
+		cout << red << "BISON" << white << "\t" << "compound_stmt : while_stmt" << endl;
+	}| funcdef | classdef ;
 
 comp_op:
 	"<" {
 		$<AST>$ = newnode("comp_op", 1);
 		$<AST>$->Value.Number = LESS;
-		fout_diag << "BISON\tcomp_op : \"<\"\n";
+		fout_diag << "BISON" << "\t" << "comp_op : \"<\"" << endl;
+		cout << red << "BISON" << white << "\t" << "comp_op : \"<\"" << endl;
 	}|
 	">" {
 		$<AST>$ = newnode("comp_op", 2);
 		$<AST>$->Value.Number = GREATER;
-		fout_diag << "BISON\tcomp_op : \">\"\n";
+		fout_diag << "BISON" << "\t" << "comp_op : \">\"" << endl;
+		cout << red << "BISON" << white << "\t" << "comp_op : \">\"" << endl;
 	}|
 	"==" {
 		$<AST>$ = newnode("comp_op", 3);
 		$<AST>$->Value.Number = EQEQUAL;
-		fout_diag << "BISON\tcomp_op : \"==\"\n";
+		fout_diag << "BISON" << "\t" << "comp_op : \"==\"" << endl;
+		cout << red << "BISON" << white << "\t" << "comp_op : \"==\"" << endl;
 	}|
 	">=" {
 		$<AST>$ = newnode("comp_op", 4);
 		$<AST>$->Value.Number = GREATEREQUAL;
-		fout_diag << "BISON\tcomp_op : \">=\"\n";
+		fout_diag << "BISON" << "\t" << "comp_op : \">=\"" << endl;
+		cout << red << "BISON" << white << "\t" << "comp_op : \">=\"" << endl;
 	}|
 	"<=" {
 		$<AST>$ = newnode("comp_op", 5);
 		$<AST>$->Value.Number = LESSEQUAL;
-		fout_diag << "BISON\tcomp_op : \"<=\"\n";
+		fout_diag << "BISON" << "\t" << "comp_op : \"<=\"" << endl;
+		cout << red << "BISON" << white << "\t" << "comp_op : \"<=\"" << endl;
 	}|
 	"<>" {
 		$<AST>$ = newnode("comp_op", 6);
 		$<AST>$->Value.Number = NOTEQUAL;
-		fout_diag << "BISON\tcomp_op : \"<>\"\n";
+		fout_diag << "BISON" << "\t" << "comp_op : \"<>\"" << endl;
+		cout << red << "BISON" << white << "\t" << "comp_op : \"<>\"" << endl;
 	}|
 	"!=" {
 		$<AST>$ = newnode("comp_op", 7);
 		$<AST>$->Value.Number = NOTEQUAL;
-		fout_diag << "BISON\tcomp_op : \"!=\"\n";
-	}|
-	"is" {
-		$<AST>$ = newnode("comp_op", 8);
-		$<AST>$->Value.Number = IS;
-		fout_diag << "BISON\tcomp_op : \"is\"\n";
-	}|
-	"is" "not" {
-		$<AST>$ = newnode("comp_op", 9);
-		$<AST>$->Value.Number = -2;
-		fout_diag << "BISON\tcomp_op : \"is\" \"not\"\n";
-	};
+		fout_diag << "BISON" << "\t" << "comp_op : \"!=\"" << endl;
+		cout << red << "BISON" << white << "\t" << "comp_op : \"!=\"" << endl;
+	}| "is" | "is" "not" ;
 
-continue_stmt:
-	"continue" {
-		$<AST>$ = newnode("continue_stmt", 1);
-	};
+continue_stmt: "continue" ;
 
 expr:
 	xor_expr {
 		$<AST>$ = newnode("expr", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\texpr : xor_expr\n";
+		fout_diag << "BISON" << "\t" << "expr : xor_expr" << endl;
+		cout << red << "BISON" << white << "\t" << "expr : xor_expr" << endl;
 	}|
 	expr "|" xor_expr {
 		$<AST>$ = newnode("expr", 2);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\texpr : expr \"|\" xor_expr\n";
+		fout_diag << "BISON" << "\t" << "expr : expr \"|\" xor_expr" << endl;
+		cout << red << "BISON" << white << "\t" << "expr : expr \"|\" xor_expr" << endl;
 	};
 
 expr_stmt:
-	NAME "=" expr {
+	VALUE_TYPE_NAME "=" expr {
 		$<AST>$ = newnode("expr_stmt", 1);
-		$<AST>$->l = newnode("NAME", NAME);//???????
+		$<AST>$->l = newnode("VALUE_TYPE_NAME", VALUE_TYPE_NAME);
 		$<AST>$->l->Value.Name = $<Name>1;
 		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\texpr_stmt : NAME \'=' expr\n";
+		fout_diag << "BISON" << "\t" << "expr_stmt : VALUE_TYPE_NAME \'=' expr" << endl;
+		cout << red << "BISON" << white << "\t" << "expr_stmt : VALUE_TYPE_NAME \'=' expr" << endl;
 	};
 
 factor:
 	power {
 		$<AST>$ = newnode("factor", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tfactor : power\n";
+		fout_diag << "BISON" << "\t" << "factor : power" << endl;
+		cout << red << "BISON" << white << "\t" << "factor : power" << endl;
 	}|
 	"+" factor {
 		$<AST>$ = newnode("factor", 2);
 		$<AST>$->l = $<AST>2;
-		fout_diag << "BISON\tfactor : \"+\" factor\n";
+		fout_diag << "BISON" << "\t" << "factor : \"+\" factor" << endl;
+		cout << red << "BISON" << white << "\t" << "factor : \"+\" factor" << endl;
 	}|
 	"-" factor{
 		$<AST>$ = newnode("factor", 3);
 		$<AST>$->l = $<AST>2;
-		fout_diag << "BISON\tfactor : \"-\" factor\n";
+		fout_diag << "BISON" << "\t" << "factor : \"-\" factor" << endl;
+		cout << red << "BISON" << white << "\t" << "factor : \"-\" factor" << endl;
 	};
 
 file_input:
 	NEWLINE {
 		$<AST>$ = newnode("file_input", 1);
 		$<AST>$->r = newnode("NEWLINE", NEWLINE);
-		fout_diag << "BISON\tfile_input : NEWLINE\n";
+		fout_diag << "BISON" << "\t" << "file_input : NEWLINE" << endl;
+		cout << red << "BISON" << white << "\t" << "file_input : NEWLINE" << endl;
 		
 	}|
 	stmt {
 		$<AST>$ = newnode("file_input", 2);
 		$<AST>$->r = $<AST>1;
-		fout_diag << "BISON\tfile_input : stmt\n";
+		fout_diag << "BISON" << "\t" << "file_input : stmt" << endl;
+		cout << red << "BISON" << white << "\t" << "file_input : stmt" << endl;
 	}|
 	file_input NEWLINE {
 		$<AST>$ = newnode("file_input", 3);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = newnode("NEWLINE", NEWLINE);
-		fout_diag << "BISON\tfile_input : file_input_sub NEWLINE\n";
+		fout_diag << "BISON" << "\t" << "file_input : file_input NEWLINE" << endl;
+		cout << red << "BISON" << white << "\t" << "file_input : file_input NEWLINE" << endl;
 	}|
 	file_input stmt {
 		$<AST>$ = newnode("file_input", 4);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>2;
-		fout_diag << "BISON\tfile_input : file_input_sub stmt\n";
+		fout_diag << "BISON" << "\t" << "file_input : file_input stmt" << endl;
+		cout << red << "BISON" << white << "\t" << "file_input : file_input stmt" << endl;
 	};
 
 flow_stmt:
-	break_stmt {
-		$<AST>$ = newnode("flow_stmt", 1);
-		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tflow_stmt : break_stmt\n";
-	}|
-	continue_stmt {
-		fout_diag << "BISON\tflow_stmt : continue_stmt\n";
-	}|
-	return_stmt {
-		fout_diag << "BISON\tflow_stmt : return_stmt\n";
-	};
+	break_stmt | continue_stmt | return_stmt ;
 
 funcdef:
-	"def" NAME parameters ":" suite {
-		fout_diag << "BISON\tfuncdef : \"def\" NAME parameters \":\" suite\n";
-	};
+	"def" VALUE_TYPE_NAME parameters ":" suite;
 
 if_stmt:
 	"if" test ":" suite newline_plus {
 		$<AST>$ = newnode("if_stmt", 1);
 		$<AST>$->l = $<AST>2;
 		$<AST>$->r = $<AST>4;
-		fout_diag << "BISON\tif_stmt : \"if\" test \":\" suite if_stmt_sub\n";
+		fout_diag << "BISON" << "\t" << "if_stmt : \"if\" test \":\" suite newline_plus" << endl;
+		cout << red << "BISON" << white << "\t" << "if_stmt : \"if\" test \":\" suite newline_plus" << endl;
 	}|
 	"if" test ":" suite newline_plus "else" ":" suite {
 		$<AST>$ = newnode("if_stmt", 2);
 		$<AST>$->l = $<AST>2;
 		$<AST>$->r = $<AST>4;
 		$<AST>$->j = $<AST>8;
-		fout_diag << "BISON\tif_stmt : \"if\" test \":\" suite if_stmt_sub \"else\" \":\" suite\n";
+		fout_diag << "BISON" << "\t" << "if_stmt : \"if\" test \":\" suite newline_plus \"else\" \":\" suite" << endl;
+		cout << red << "BISON" << white << "\t" << "if_stmt : \"if\" test \":\" suite newline_plus \"else\" \":\" suite" << endl;
 	};
 
 newline_plus:
@@ -569,286 +539,278 @@ not_test:
 	comparison {
 		$<AST>$ = newnode("not_test", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tnot_test : comparison\n";
+		fout_diag << "BISON" << "\t" << "not_test : comparison" << endl;
+		cout << red << "BISON" << white << "\t" << "not_test : comparison" << endl;
 	}|
 	"not" not_test {
 		$<AST>$ = newnode("not_test", 2);
 		$<AST>$->l = $<AST>2;
-		fout_diag << "BISON\tnot_test : \"not\" not_test\n";
+		fout_diag << "BISON" << "\t" << "not_test : \"not\" not_test" << endl;
+		cout << red << "BISON" << white << "\t" << "not_test : \"not\" not_test" << endl;
 	};
 
 or_test:
 	and_test {
 		$<AST>$ = newnode("or_test", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tor_test : and_test\n";
+		fout_diag << "BISON" << "\t" << "or_test : and_test" << endl;
+		cout << red << "BISON" << white << "\t" << "or_test : and_test" << endl;
 	}|
 	or_test "or" and_test {
 		$<AST>$ = newnode("or_test", 2);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\tor_test : or_test \"or\" and_test\n";
+		fout_diag << "BISON" << "\t" << "or_test : or_test \"or\" and_test" << endl;
+		cout << red << "BISON" << white << "\t" << "or_test : or_test \"or\" and_test" << endl;
 	};
 
-parameters				: "(" ")"																{fout_diag << "BISON\tparameters : \"(\" \")\"\n";}
-						| "(" typedargslist ")"													{fout_diag << "BISON\tparameters : \"(\" typedargslist \")\"\n";}
-						;
+parameters:
+	"(" ")" | "(" typedargslist ")" ;
 pass_stmt:
-	"pass" {
-		$<AST>$ = newnode("pass_stmt", 1);
-		fout_diag << "BISON\tflow_stmt : return_stmt\n";
-	};
+	"pass" ;
 
 power:
 	atom_expr {
 		$<AST>$ = newnode("power", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tpower : atom_expr" << "\n";
+		fout_diag << "BISON" << "\t" << "power : atom_expr" << endl;
+		cout << red << "BISON" << white << "\t" << "power : atom_expr" << endl;
 	}|
 	atom_expr "**" factor {
 		$<AST>$ = newnode("power", 2);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\tpower : atom_expr \"**\" factor" << "\n";
+		fout_diag << "BISON" << "\t" << "power : atom_expr \"**\" factor" << endl;
+		cout << red << "BISON" << white << "\t" << "power : atom_expr \"**\" factor" << endl;
 	};
 
 print_stmt:
 	"print" "(" expr ")" {
 		$<AST>$ = newnode("print_stmt", 1);
 		$<AST>$->l = $<AST>3;
-		fout_diag << "BISON\tprint_stmt : \"print\" \"(\" atom \")\"" << "\n";
+		fout_diag << "BISON" << "\t" << "print_stmt : \"print\" \"(\" atom \")\"" << endl;
+		cout << red << "BISON" << white << "\t" << "print_stmt : \"print\" \"(\" atom \")\"" << endl;
 	};
 
 return_stmt:
-	"return" {
-		fout_diag << "BISON\treturn_stmt : \"return\"\n";
-	}|
-	"return" testlist {
-		fout_diag << "BISON\treturn_stmt : \"return\" testlist\n";
-	};
+	"return" | "return" testlist ;
 
 shift_expr:
 	arith_expr {
 		$<AST>$ = newnode("shift_expr", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tshift_expr : arith_expr\n";
+		fout_diag << "BISON" << "\t" << "shift_expr : arith_expr" << endl;
+		cout << red << "BISON" << white << "\t" << "shift_expr : arith_expr" << endl;
 	}|
 	shift_expr "<<" arith_expr {
 		$<AST>$ = newnode("shift_expr", 2);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\tshift_expr : shift_expr \"<<\" arith_expr\n";
+		fout_diag << "BISON" << "\t" << "shift_expr : shift_expr \"<<\" arith_expr" << endl;
+		cout << red << "BISON" << white << "\t" << "shift_expr : shift_expr \"<<\" arith_expr" << endl;
 	}|
 	shift_expr ">>" arith_expr {
 		$<AST>$ = newnode("shift_expr", 3);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\tshift_expr : shift_expr \">>\" arith_expr\n";
+		fout_diag << "BISON" << "\t" << "shift_expr : shift_expr \">>\" arith_expr" << endl;
+		cout << red << "BISON" << white << "\t" << "shift_expr : shift_expr \">>\" arith_expr" << endl;
 	};
 
 simple_stmt:
 	small_stmt NEWLINE {
 		$<AST>$ = newnode("simple_stmt", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tsimple_stmt : small_stmt NEWLINE\n";
+		fout_diag << "BISON" << "\t" << "simple_stmt : small_stmt NEWLINE" << endl;
+		cout << red << "BISON" << white << "\t" << "simple_stmt : small_stmt NEWLINE" << endl;
 	};
 
-sliceop					: ":"
-						| ":" test
-						;
+sliceop:
+	":" | ":" test ;
+
 small_stmt:
 	expr_stmt {
 		$<AST>$ = newnode("small_stmt", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tsmall_stmt : expr_stmt\n";
-	}|
-	pass_stmt {
-		$<AST>$ = newnode("small_stmt", 2);
-		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tsmall_stmt : pass_stmt\n";
-	}|
-	flow_stmt {
-		$<AST>$ = newnode("small_stmt", 3);
-		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tsmall_stmt : flow_stmt\n";
-	}|
+		fout_diag << "BISON" << "\t" << "small_stmt : expr_stmt" << endl;
+		cout << red << "BISON" << white << "\t" << "small_stmt : expr_stmt" << endl;
+	}| pass_stmt | flow_stmt |
 	print_stmt {
 		$<AST>$ = newnode("small_stmt", 4);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tsmall_stmt : print_stmt\n";
+		fout_diag << "BISON" << "\t" << "small_stmt : print_stmt" << endl;
+		cout << red << "BISON" << white << "\t" << "small_stmt : print_stmt" << endl;
 	};
 
 stmt:
 	simple_stmt {
 		$<AST>$ = newnode("stmt", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tstmt : simple_stmt\n";
+		fout_diag << "BISON" << "\t" << "stmt : simple_stmt" << endl;
+		cout << red << "BISON" << white << "\t" << "stmt : simple_stmt" << endl;
 	}|
 	compound_stmt {
 		$<AST>$ = newnode("stmt", 2);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tstmt : compound_stmt\n";
+		fout_diag << "BISON" << "\t" << "stmt : compound_stmt" << endl;
+		cout << red << "BISON" << white << "\t" << "stmt : compound_stmt" << endl;
 	};
 
-subscript				: test
-						| ":"
-						| ":" sliceop
-						| ":" test
-						| ":" test sliceop
-						| test ":"
-						| test ":" sliceop
-						| test ":" test
-						| test ":" test sliceop
-						;
-subscriptlist			: subscriptlist_sub
-						| subscriptlist_sub ","
-						;
-subscriptlist_sub		: subscript
-						| subscriptlist_sub "," subscript 
-						;
+subscript:
+	test | ":" | ":" sliceop | ":" test | ":" test sliceop | test ":" | test ":" sliceop | test ":" test | test ":" test sliceop ;
+
+subscriptlist:
+	subscriptlist_sub | subscriptlist_sub "," ;
+
+subscriptlist_sub:
+	subscript | subscriptlist_sub "," subscript ;
 
 suite:
 	simple_stmt {
 		$<AST>$ = newnode("suite", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tsuite : simple_stmt\n";
+		fout_diag << "BISON" << "\t" << "suite : simple_stmt" << endl;
+		cout << red << "BISON" << white << "\t" << "suite : simple_stmt" << endl;
 	}|
 	NEWLINE INDENT suite_sub DEDENT {
 		$<AST>$ = newnode("suite", 2);
 		$<AST>$->l = $<AST>3;
-		fout_diag << "BISON\tsuite : NEWLINE INDENT suite_sub DEDENT\n";
+		fout_diag << "BISON" << "\t" << "suite : NEWLINE INDENT suite_sub DEDENT" << endl;
+		cout << red << "BISON" << white << "\t" << "suite : NEWLINE INDENT suite_sub DEDENT" << endl;
 	};
 
 suite_sub:
 	stmt {
 		$<AST>$ = newnode("suite_sub", 1);
 		$<AST>$->r = $<AST>1;
-		fout_diag << "BISON\tsuite_sub : stmt\n";
+		fout_diag << "BISON" << "\t" << "suite_sub : stmt" << endl;
+		cout << red << "BISON" << white << "\t" << "suite_sub : stmt" << endl;
 	}|
 	suite_sub stmt {
 		$<AST>$ = newnode("suite_sub", 2);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>2;
-		fout_diag << "BISON\tsuite_sub : suite_sub stmt\n";
+		fout_diag << "BISON" << "\t" << "suite_sub : suite_sub stmt" << endl;
+		cout << red << "BISON" << white << "\t" << "suite_sub : suite_sub stmt" << endl;
 	};
 
 term:
 	factor {
 		$<AST>$ = newnode("term", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\tterm : factor\n";
+		fout_diag << "BISON" << "\t" << "term : factor" << endl;
+		cout << red << "BISON" << white << "\t" << "term : factor" << endl;
 	}|
 	term "*" factor {
 		$<AST>$ = newnode("term", 2);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\tterm : term \"*\" factor\n";
+		fout_diag << "BISON" << "\t" << "term : term \"*\" factor" << endl;
+		cout << red << "BISON" << white << "\t" << "term : term \"*\" factor" << endl;
 	}|
 	term "/" factor {
 		$<AST>$ = newnode("term", 3);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\tterm : term \"/\" factor\n";
+		fout_diag << "BISON" << "\t" << "term : term \"/\" factor" << endl;
+		cout << red << "BISON" << white << "\t" << "term : term \"/\" factor" << endl;
 	}|
 	term "%" factor {
 		$<AST>$ = newnode("term", 4);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\tterm : term \"%\" factor\n";
+		fout_diag << "BISON" << "\t" << "term : term \"%\" factor" << endl;
+		cout << red << "BISON" << white << "\t" << "term : term \"%\" factor" << endl;
 	}|
 	term "//" factor {
 		$<AST>$ = newnode("term", 5);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\tterm : term \"//\" factor\n";
+		fout_diag << "BISON" << "\t" << "term : term \"//\" factor" << endl;
+		cout << red << "BISON" << white << "\t" << "term : term \"//\" factor" << endl;
 	};
 
 test:
 	or_test {
 		$<AST>$ = newnode("test", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\ttest : or_test\n";
+		fout_diag << "BISON" << "\t" << "test : or_test" << endl;
+		cout << red << "BISON" << white << "\t" << "test : or_test" << endl;
 	};
 
 testlist:
-	testlist_sub {
-		$<AST>$ = $<AST>1;
-		fout_diag << "BISON\ttestlist : test testlist_sub\n";
-	}|
-	testlist_sub ","
-	;
+	testlist_sub | testlist_sub "," ;
 
 testlist_sub:
-	test {
-		$<AST>$ = $<AST>1;
-		fout_diag << "BISON\ttestlist_sub : \n";
-	}|
-	testlist_sub "," test
-	;
+	test | testlist_sub "," test ;
 
-tfpdef: NAME;
+tfpdef:
+	VALUE_TYPE_NAME;
 
-trailer					: "(" ")"																{fout_diag << "BISON\ttrailer : \"(\" \")\"\n";}
-						| "(" arglist ")"														{fout_diag << "BISON\ttrailer : \"(\" arglist \")\"\n"; /*$$ = $2*/}
-						| "[" subscriptlist "]"													{fout_diag << "BISON\ttrailer : \"[\" subscriptlist \"]\"\n"; /*$$ = $2*/}
-						| "." NAME																{fout_diag << "BISON\ttrailer : \".\" NAME\n";}
-						;
+trailer:
+	"(" ")" | "(" arglist ")" | "[" subscriptlist "]" | "." VALUE_TYPE_NAME ;
 
 trailer_plus:
-	trailer
-	|
-	trailer_plus trailer {
-		fout_diag << "BISON\ttrailer_star : trailer_star trailer\n";
-	};
+	trailer | trailer_plus trailer ;
 
-typedargslist			: tfpdef
-						| typedargslist_sub
-						;
+typedargslist:
+	tfpdef | typedargslist_sub ;
 
-typedargslist_sub		: "," tfpdef
-						| typedargslist_sub "," tfpdef
-						;
+typedargslist_sub:
+	"," tfpdef | typedargslist_sub "," tfpdef ;
 						
 while_stmt:
 	"while" test ":" suite {
 		$<AST>$ = newnode("while_stmt", 1);
 		$<AST>$->l = $<AST>2;
 		$<AST>$->r = $<AST>4;
+		fout_diag << "BISON" << "\t" << "while_stmt : \"while\" test \":\" suite" << endl;
+		cout << red << "BISON" << white << "\t" << "while_stmt : \"while\" test \":\" suite" << endl;
 	};
 
 xor_expr:
 	and_expr {
 		$<AST>$ = newnode("xor_expr", 1);
 		$<AST>$->l = $<AST>1;
-		fout_diag << "BISON\txor_expr : and_expr\n";
+		fout_diag << "BISON" << "\t" << "xor_expr : and_expr" << endl;
+		cout << red << "BISON" << white << "\t" << "xor_expr : and_expr" << endl;
 	}|
 	xor_expr "^" and_expr {
 		$<AST>$ = newnode("xor_expr", 2);
 		$<AST>$->l = $<AST>1;
 		$<AST>$->r = $<AST>3;
-		fout_diag << "BISON\txor_expr : xor_expr \"^\" and_expr\n";
+		fout_diag << "BISON" << "\t" << "xor_expr : xor_expr \"^\" and_expr" << endl;
+		cout << red << "BISON" << white << "\t" << "xor_expr : xor_expr \"^\" and_expr" << endl;
 	};
 %%
 
 int main(int argc, char * argv[]) {
 	if (argc != 2) {
-		fprintf(stderr, "1 argument required!\n");
+		cout << red << "1 argument required!" << white << endl;
 		exit(1);
 	}
 	ifstream fin(argv[1], ios::in);
 	if (fin.fail() || fin.bad()) {
-		fprintf(stderr, "Destination Error\nPlease Drag a source file onto this EXE\n");
+		cout << red << "Destination Error" << white << endl;
+		cout << "Please Drag a source file onto " << yellow << "MAKE.bat" << white << endl;
 		exit(1);
 	}
 	ReadTokens(fin, T);
-	PrintTokens(T);
 	initTable();
 	yyparse();
 	fout_diag.close();
 	fout_diag.open("INTERPRETER.log", ios::out);
+	cout << yellow << "Syntactic and Semantic Analysis Complete" << white << endl;
+	cout << yellow << "Press any button to interpret the source code" << white << endl;
+	cout << yellow << "THIS LOG IS STORED AS " << red << "PARSER.LOG" << white << endl;
+	system("pause > nul");
+	system("CLS");
 	interpret_input();
 	disptable();
 	fout_diag.close();
+	system("pause > nul");
+	cout << yellow << "Interpretation Complete" << white << endl;
+	cout << yellow << "LOG DURING INTERPRETATION IS STORED AS " << red << "INTERPRETER.LOG" << white << endl;
 	return 0;
 };
 #include "tokenizer.h"
