@@ -1,7 +1,5 @@
 @echo off
-del tokens.txt
-del Interpreter.exe
-del Token.exe
+start CLEAN.bat
 Accessories\bison -d Viper.y
 Accessories\flex Viper.l
 g++ lex.yy.cc
