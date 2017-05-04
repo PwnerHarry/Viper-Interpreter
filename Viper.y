@@ -654,6 +654,13 @@ stmt:
 		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON" << "\t" << "stmt : compound_stmt" << endl;
 		cout << red << "BISON" << white << "\t" << "stmt : compound_stmt" << endl;
+	}|
+	error {
+		fout_diag << "A SYNTACTIC ERROR HAS BEEN FOUND AT LINE" << "\t" << T->t[T->Pointer - 1].lineno << endl;
+		cout << red << "A SYNTACTIC ERROR HAS BEEN FOUND AT LINE " << yellow << T->t[T->Pointer - 1].lineno << white << endl;
+		system("pause > nul");
+		fout_diag.close();
+		exit(1);
 	};
 
 subscript:

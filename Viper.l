@@ -223,7 +223,7 @@ literal		{number}
 
 int main(int argc, char* argv[]) {
 	if (argc == 1) {
-		cout << red << "Expected 1 or 2 arguments!" << white << endl;
+		cout << red << "DESTINATION ERROR" << white << endl;
 		exit(1);
 	}
 	ifstream* in = new ifstream(argv[1], ios::in);

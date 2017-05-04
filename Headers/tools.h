@@ -51,5 +51,5 @@ char * inttype(int type){
 	}
 }
 void yyerror(char *s) {
-	fprintf(stderr, "%s\n", s);
+	;
 };

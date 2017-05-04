@@ -1,5 +1,6 @@
 @echo off
 del lex.yy.cc
+del a.exe
 del PARSER.log
 del INTERPRETER.log
 del Token.exe
