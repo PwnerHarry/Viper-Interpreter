@@ -6,3 +6,4 @@ del Token.exe
 del Interpreter.exe
 del Viper.tab.c
 del Viper.tab.h
+exit

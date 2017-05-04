@@ -5,7 +5,7 @@
 #include "fstream"
 #include "math.h"
 #include "string.h"
-#include "color.h"
+#include "Headers\\color.h"
 
 using namespace std;
 ofstream fout_diag("PARSER.log", ios::out);
@@ -281,13 +281,13 @@ and_test:
 		cout << red << "BISON" << white << "\t" << "and_test : and_test \"and\" not_test" << endl;
 	};
 
-arglist					: arglist_sub
-						| arglist_sub ","
-						;
-arglist_sub				: argument
-						| arglist_sub "," argument
-						;
-argument: test | test "=" test | "**" test | "*" test ;
+arglist:
+	arglist_sub | arglist_sub "," ;
+
+arglist_sub:
+	argument | arglist_sub "," argument ;
+argument:
+	test | test "=" test | "**" test | "*" test ;
 
 arith_expr:
 	term {
@@ -786,7 +786,7 @@ xor_expr:
 
 int main(int argc, char * argv[]) {
 	if (argc != 2) {
-		cout << red << "1 argument required!" << white << endl;
+		cout << red << "Destination required!" << white << endl;
 		exit(1);
 	}
 	ifstream fin(argv[1], ios::in);
@@ -813,9 +813,9 @@ int main(int argc, char * argv[]) {
 	cout << yellow << "LOG DURING INTERPRETATION IS STORED AS " << red << "INTERPRETER.LOG" << white << endl;
 	return 0;
 };
-#include "tokenizer.h"
-#include "ast.h"
-#include "tools.h"
-#include "symtable.h"
-#include "interpret.h"
-#include "stack.h"
+#include "Headers\\tokenizer.h"
+#include "Headers\\ast.h"
+#include "Headers\\tools.h"
+#include "Headers\\symtable.h"
+#include "Headers\\interpret.h"
+#include "Headers\\stack.h"
