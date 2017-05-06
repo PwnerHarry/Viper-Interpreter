@@ -286,6 +286,7 @@ arglist:
 
 arglist_sub:
 	argument | arglist_sub "," argument ;
+
 argument:
 	test | test "=" test | "**" test | "*" test ;
 
@@ -354,9 +355,10 @@ atom_expr:
 		$<AST>$ = newnet("atom_expr", 2, $<AST>2);
 		fout_diag << "BISON" << "\t" << "atom_expr : \"(\" expr \")\"" << endl;
 		cout << red << "BISON" << white << "\t" << "atom_expr : \"(\" expr \")\"" << endl;
-	}| atom trailer_plus ;
+	};
 
-break_stmt : "break" ;
+break_stmt:
+	"break" ;
 
 classdef:
 	"class" VALUE_TYPE_NAME ":" suite | "class" VALUE_TYPE_NAME "(" ")" ":" suite |	"class" VALUE_TYPE_NAME "(" arglist ")" ":" suite ;
@@ -428,9 +430,11 @@ comp_op:
 		$<AST>$->Value.Number = NOTEQUAL;
 		fout_diag << "BISON" << "\t" << "comp_op : \"!=\"" << endl;
 		cout << red << "BISON" << white << "\t" << "comp_op : \"!=\"" << endl;
-	}| "is" | "is" "not" ;
+	}|
+	"is" | "is" "not" ;
 
-continue_stmt: "continue" ;
+continue_stmt:
+	"continue" ;
 
 expr:
 	xor_expr {
@@ -566,6 +570,7 @@ or_test:
 
 parameters:
 	"(" ")" | "(" typedargslist ")" ;
+
 pass_stmt:
 	"pass" ;
 
@@ -625,9 +630,6 @@ simple_stmt:
 		cout << red << "BISON" << white << "\t" << "simple_stmt : small_stmt NEWLINE" << endl;
 	};
 
-sliceop:
-	":" | ":" test ;
-
 small_stmt:
 	expr_stmt {
 		$<AST>$ = newnode("small_stmt", 1);
@@ -662,15 +664,6 @@ stmt:
 		fout_diag.close();
 		exit(1);
 	};
-
-subscript:
-	test | ":" | ":" sliceop | ":" test | ":" test sliceop | test ":" | test ":" sliceop | test ":" test | test ":" test sliceop ;
-
-subscriptlist:
-	subscriptlist_sub | subscriptlist_sub "," ;
-
-subscriptlist_sub:
-	subscript | subscriptlist_sub "," subscript ;
 
 suite:
 	simple_stmt {
@@ -753,12 +746,6 @@ testlist_sub:
 
 tfpdef:
 	VALUE_TYPE_NAME;
-
-trailer:
-	"(" ")" | "(" arglist ")" | "[" subscriptlist "]" | "." VALUE_TYPE_NAME ;
-
-trailer_plus:
-	trailer | trailer_plus trailer ;
 
 typedargslist:
 	tfpdef | typedargslist_sub ;
