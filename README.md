@@ -15,6 +15,6 @@ The features that are not so hurry to realize yet we wish to bring them on somed
 	GUI
 How to run this:
 
-	Turn on your windows
-	Make sure that your g++ is in a directory the system environment variables as "Path"
-	put source file in the master folder, simply drag a source file (*.vi) onto Viper.exe
+	Turn on your Windows
+	Make sure that your g++ is in a directory the user / system environment variables as "Path"
+	Put source files in the master folder, simply drag a source file (*.vi) onto MAKE.bat
