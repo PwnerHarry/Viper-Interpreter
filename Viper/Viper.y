@@ -5,7 +5,7 @@
 #include "fstream"
 #include "math.h"
 #include "string.h"
-#include "Headers\\color.h"
+#include "Viper\\color.h"
 
 using namespace std;
 ofstream fout_diag("PARSER.log", ios::out);
@@ -807,9 +807,9 @@ int main(int argc, char * argv[]) {
 	cout << yellow << "LOG DURING INTERPRETATION IS STORED AS " << red << "INTERPRETER.LOG" << white << endl;
 	return 0;
 };
-#include "Headers\\tokenizer.h"
-#include "Headers\\ast.h"
-#include "Headers\\tools.h"
-#include "Headers\\symtable.h"
-#include "Headers\\interpret.h"
-#include "Headers\\stack.h"
+#include "Viper\\tokenizer.h"
+#include "Viper\\ast.h"
+#include "Viper\\tools.h"
+#include "Viper\\symtable.h"
+#include "Viper\\interpret.h"
+#include "Viper\\stack.h"
