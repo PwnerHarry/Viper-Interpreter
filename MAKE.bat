@@ -9,3 +9,4 @@ g++ Viper.tab.c
 ren a.exe Interpreter.exe
 start Accessories\Interpret.bat
 del lex.yy.cc
+pause

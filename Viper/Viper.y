@@ -532,7 +532,10 @@ if_stmt:
 		fout_diag << "BISON" << "\t" << "if_stmt : \"if\" test \":\" suite newline_plus \"else\" \":\" suite" << endl;
 		cout << red << "BISON" << white << "\t" << "if_stmt : \"if\" test \":\" suite newline_plus \"else\" \":\" suite" << endl;
 	};
-
+input_stmt:
+	VALUE_TYPE_NAME "=" "input" "(" VALUE_TYPE_STRING ")" {
+		;//To be done
+	};
 newline_plus:
 	NEWLINE
 	|
@@ -642,6 +645,9 @@ small_stmt:
 		$<AST>$->l = $<AST>1;
 		fout_diag << "BISON" << "\t" << "small_stmt : print_stmt" << endl;
 		cout << red << "BISON" << white << "\t" << "small_stmt : print_stmt" << endl;
+	}|
+	input_stmt {
+		;
 	};
 
 stmt:
